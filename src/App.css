@@ -596,6 +596,33 @@ li {
   color: #fff;
 }
 
+/* Animacje przejść między kategoriami i podsumowaniem */
+.fade-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.35s, transform 0.35s;
+}
+.fade-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fade-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+/* Dla płynności na mobile */
+@media (max-width: 700px) {
+  .fade-enter, .fade-exit-active {
+    transform: translateY(40px);
+  }
+}
+
 @media (max-width: 900px) {
   .main-layout {
     flex-direction: column;

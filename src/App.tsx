@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
 const categories = [
@@ -12,17 +12,35 @@ const categories = [
 const menu = [
   { id: 1, name: 'Coca-Cola', price: 7, category: 'napoje', img: '/img/coca-cola.jpg' },
   { id: 2, name: 'Frytki', price: 9, category: 'dodatki', img: '/img/frytki.jpg' },
-  { id: 3, name: 'Zestaw Burger Wołowy + cola + frytki', price: 28, category: 'zestawy', img: '/img/zestaw-burger.jpg' },
+  { id: 3, name: 'Burger Wołowy + cola + frytki', price: 28, category: 'zestawy', img: '/img/zestaw-burger.jpg' },
   { id: 4, name: 'Burger Wołowy', price: 19, category: 'burgery', img: '/img/burger-wolowy.jpg' },
   { id: 5, name: 'Wrap Kurczak', price: 17, category: 'wrapy', img: '/img/wrap-kurczak.jpg' },
   { id: 6, name: 'Sos do frytek', price: 3, category: 'dodatki', img: '/img/sos.jpg' },
   { id: 7, name: 'Burger BBQ', price: 21, category: 'burgery', img: '/img/burger-bbq.jpg' },
   { id: 8, name: 'Burger Vege', price: 18, category: 'burgery', img: '/img/burger-vege.jpg' },
   { id: 9, name: 'Wrap Vege', price: 16, category: 'wrapy', img: '/img/wrap-vege.jpg' },
-  { id: 10, name: 'Zestaw Wrap + Sprite + Frytki', price: 27, category: 'zestawy', img: '/img/zestaw-wrap.jpg' },
+  { id: 10, name: 'Wrap + Sprite + Frytki', price: 27, category: 'zestawy', img: '/img/zestaw-wrap.jpg' },
   { id: 11, name: 'Sprite', price: 7, category: 'napoje', img: '/img/sprite.jpg' },
   { id: 12, name: 'Woda', price: 6, category: 'napoje', img: '/img/woda.jpg' },
 ]
+
+function FadeTransition({ children, triggerKey }: { children: React.ReactNode, triggerKey: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.classList.remove('fade-enter');
+    void el.offsetWidth; // force reflow
+    el.classList.add('fade-enter');
+    setTimeout(() => {
+      el.classList.add('fade-enter-active');
+    }, 10);
+    return () => {
+      el.classList.remove('fade-enter', 'fade-enter-active');
+    };
+  }, [triggerKey]);
+  return <div ref={ref} className="fade-enter">{children}</div>;
+}
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -117,11 +135,24 @@ function App() {
     </div>
   )
 
+  const handleLogoClick = () => {
+    if (selectedCategory !== null || showSummary) {
+      setSelectedCategory(null);
+      setShowSummary(false);
+    }
+  };
+
   return (
     <div className="main-layout" style={{ minHeight: '100vh', boxSizing: 'border-box', paddingTop: 0 }}>
       {!showSummary && (
         <aside className="sidebar">
-          <img src="/img/logo.jpg" alt="Logo" className="sidebar-logo" />
+          <img
+            src="/img/logo.jpg"
+            alt="Logo"
+            className="sidebar-logo"
+            onClick={handleLogoClick}
+            style={{ cursor: 'pointer' }}
+          />
           <h3>Kategorie</h3>
           <ul>
             {categories.map(cat => {
@@ -138,9 +169,13 @@ function App() {
       )}
       <main className="content">
         {!showSummary ? (
-          selectedCategory ? renderMenu() : renderStart()
+          <FadeTransition triggerKey={selectedCategory || 'start'}>
+            {selectedCategory ? renderMenu() : renderStart()}
+          </FadeTransition>
         ) : (
-          renderSummary()
+          <FadeTransition triggerKey="summary">
+            {renderSummary()}
+          </FadeTransition>
         )}
         {!showSummary && (
           <div className="order-bar">
