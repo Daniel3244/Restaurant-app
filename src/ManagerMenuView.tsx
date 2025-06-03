@@ -25,13 +25,14 @@ const CATEGORIES = [
 const ManagerMenuView: React.FC = () => {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [form, setForm] = useState<Omit<MenuItem, 'imageUrl'> & { imageFile: File | null}>(
-    { name: '', description: '', price: 0, imageFile: null, category: CATEGORIES[0].id }
+    { name: '', description: '', price: 0, imageFile: null, category: '' }
   );
   const [editId, setEditId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [filter, setFilter] = useState({ name: '', category: '', price: '', description: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMenu = async () => {
@@ -61,6 +62,10 @@ const ManagerMenuView: React.FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!form.category) {
+      setError('Wybierz kategorię przed dodaniem pozycji.');
+      return;
+    }
     let imageUrl = '';
     if (!editId && !form.imageFile) {
       setError('Wybierz plik JPG przed dodaniem pozycji.');
@@ -104,7 +109,7 @@ const ManagerMenuView: React.FC = () => {
         body: JSON.stringify(payload),
       });
     }
-    setForm({ name: '', description: '', price: 0, imageFile: null, category: CATEGORIES[0].id });
+    setForm({ name: '', description: '', price: 0, imageFile: null, category: '' });
     setEditId(null);
     fetchMenu();
   };
@@ -130,16 +135,38 @@ const ManagerMenuView: React.FC = () => {
             value={form.name}
             onChange={handleChange}
             required
-            style={{ background: '#fff', color: '#222' }}
+            minLength={2}
+            maxLength={40}
+            className="manager-input"
+            style={{ background: '#fff', color: '#222', border: '1.5px solid #eee', borderRadius: 8, padding: '8px 12px', minWidth: 120 }}
           />
-          <select name="category" value={form.category} onChange={handleChange} required>
+          <select
+            name="category"
+            value={form.category}
+            onChange={handleChange}
+            required
+          >
+            <option value="" disabled>Wybierz kategorię</option>
             {CATEGORIES.map(cat => (
               <option key={cat.id} value={cat.id}>
                 {cat.name}
               </option>
             ))}
           </select>
-          <input name="price" type="number" step="0.01" placeholder="Cena" value={form.price} onChange={handleChange} required />
+          <div className="price-input-group">
+            <input
+              name="price"
+              type="number"
+              step="0.01"
+              min={0.01}
+              max={999.99}
+              placeholder="Cena"
+              value={form.price}
+              onChange={handleChange}
+              required
+            />
+            <span className="price-currency">zł</span>
+          </div>
         </div>
         <div className="manager-form-row">
           <input
@@ -164,7 +191,15 @@ const ManagerMenuView: React.FC = () => {
             <img src={preview} alt="Podgląd" className="manager-img-preview" />
           )}
         </div>
-        <textarea name="description" placeholder="Opis" value={form.description} onChange={handleChange} />
+        <textarea
+          name="description"
+          placeholder="Opis"
+          value={form.description}
+          onChange={handleChange}
+          minLength={2}
+          maxLength={120}
+          style={{ maxWidth: '100%', minWidth: 0, resize: 'vertical', background: '#fff', color: '#222', border: '1.5px solid #eee' }}
+        />
         <div className="manager-form-row">
           <button type="submit" disabled={uploading} className="manager-save-btn">
             {editId ? 'Zapisz zmiany' : 'Dodaj pozycję'}
@@ -175,7 +210,7 @@ const ManagerMenuView: React.FC = () => {
               className="manager-cancel-btn"
               onClick={() => {
                 setEditId(null);
-                setForm({ name: '', description: '', price: 0, imageFile: null, category: CATEGORIES[0].id });
+                setForm({ name: '', description: '', price: 0, imageFile: null, category: '' });
                 setPreview(null);
               }}
             >
@@ -186,24 +221,70 @@ const ManagerMenuView: React.FC = () => {
       </form>
       {error && <div className="manager-error">{error}</div>}
       <div className="manager-list">
-        {loading ? (
-          <p>Ładowanie...</p>
-        ) : menu.length === 0 ? (
-          <p>Brak pozycji w menu.</p>
-        ) : (
-          <table className="manager-table">
-            <thead>
-              <tr>
-                <th>Nazwa</th>
-                <th>Kategoria</th>
-                <th>Cena</th>
-                <th>Opis</th>
-                <th>Obrazek</th>
-                <th>Akcje</th>
-              </tr>
-            </thead>
-            <tbody>
-              {menu.map(item => (
+        {/* Filtrowanie */}
+        <table className="manager-table">
+          <thead>
+            <tr>
+              <th>
+                Nazwa
+                <br />
+                <input
+                  type="text"
+                  placeholder="Filtruj..."
+                  value={filter.name}
+                  onChange={e => setFilter(f => ({ ...f, name: e.target.value }))}
+                  style={{ width: '90%', fontSize: '0.95rem', marginTop: 4 }}
+                />
+              </th>
+              <th>
+                Kategoria
+                <br />
+                <select
+                  value={filter.category}
+                  onChange={e => setFilter(f => ({ ...f, category: e.target.value }))}
+                  style={{ width: '90%', fontSize: '0.95rem', marginTop: 4 }}
+                >
+                  <option value="">Wszystkie</option>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </th>
+              <th>
+                Cena
+                <br />
+                <input
+                  type="number"
+                  placeholder="Filtruj..."
+                  value={filter.price}
+                  onChange={e => setFilter(f => ({ ...f, price: e.target.value }))}
+                  style={{ width: '90%', fontSize: '0.95rem', marginTop: 4 }}
+                />
+              </th>
+              <th>
+                Opis
+                <br />
+                <input
+                  type="text"
+                  placeholder="Filtruj..."
+                  value={filter.description}
+                  onChange={e => setFilter(f => ({ ...f, description: e.target.value }))}
+                  style={{ width: '90%', fontSize: '0.95rem', marginTop: 4 }}
+                />
+              </th>
+              <th>Obrazek</th>
+              <th>Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {menu
+              .filter(item =>
+                (!filter.name || item.name.toLowerCase().includes(filter.name.toLowerCase())) &&
+                (!filter.category || item.category === filter.category) &&
+                (!filter.price || item.price.toString().includes(filter.price)) &&
+                (!filter.description || item.description.toLowerCase().includes(filter.description.toLowerCase()))
+              )
+              .map(item => (
                 <tr key={item.id}>
                   <td>{item.name}</td>
                   <td>{CATEGORIES.find(c => c.id === item.category)?.name || item.category}</td>
@@ -239,9 +320,8 @@ const ManagerMenuView: React.FC = () => {
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
