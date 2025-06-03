@@ -616,7 +616,7 @@ li {
   transition: opacity 0.25s, transform 0.25s;
 }
 
-/* Dla płynności na mobile */
+/* mobile */
 @media (max-width: 700px) {
   .fade-enter, .fade-exit-active {
     transform: translateY(40px);
@@ -714,4 +714,280 @@ li {
   object-fit: contain;
   border-radius: 8px;
   flex-shrink: 0;
+}
+
+/* Panel managera */
+.manager-view {
+  max-width: 900px;
+  margin: 40px auto 0 auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 24px 0 rgba(255,145,0,0.10);
+  padding: 36px 32px 32px 32px;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.manager-view h2 {
+  color: var(--main-orange);
+  font-size: 2.1rem;
+  margin-bottom: 32px;
+  font-weight: 800;
+}
+.manager-form {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 32px;
+  background: #fff7ed;
+  border-radius: 12px;
+  padding: 18px 18px 10px 18px;
+  box-shadow: 0 1px 8px 0 rgba(255,145,0,0.06);
+}
+.manager-form-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.manager-form input[type="text"],
+.manager-form input[type="number"],
+.manager-form select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #eee;
+  font-size: 1rem;
+  background: #fff;
+  color: #222;
+  min-width: 120px;
+  flex: 1 1 120px;
+}
+.manager-form textarea {
+  border-radius: 8px;
+  border: 1.5px solid #eee;
+  font-size: 1rem;
+  padding: 8px 12px;
+  min-height: 48px;
+  resize: vertical;
+  width: 100%;
+  background: #fff;
+  color: #222;
+}
+.manager-form input[type="text"]::placeholder,
+.manager-form input[type="number"]::placeholder,
+.manager-form textarea::placeholder {
+  color: #aaa;
+  opacity: 1;
+}
+.manager-form select:disabled,
+.manager-form input:disabled,
+.manager-form textarea:disabled {
+  background: #f5f5f5;
+  color: #bbb;
+}
+.manager-upload-btn {
+  background: var(--main-orange);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.manager-upload-btn:hover {
+  background: #ff7b00;
+}
+.manager-file-name {
+  margin-left: 12px;
+  color: #666;
+  font-size: 0.98rem;
+  font-style: italic;
+}
+.manager-img-preview {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-left: 16px;
+  border: 1.5px solid #eee;
+  box-shadow: 0 1px 4px 0 rgba(255,145,0,0.10);
+}
+.manager-save-btn {
+  background: var(--main-orange);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 22px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background 0.2s;
+}
+.manager-save-btn:disabled {
+  background: #ffd7a6;
+  color: #fff;
+  cursor: not-allowed;
+}
+.manager-cancel-btn {
+  background: #fff;
+  color: var(--main-orange);
+  border: 1.5px solid var(--main-orange);
+  border-radius: 8px;
+  padding: 8px 22px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.manager-cancel-btn:hover {
+  background: var(--main-orange);
+  color: #fff;
+}
+.manager-error {
+  color: #ff3b00;
+  margin: 12px 0 0 0;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.manager-list {
+  width: 100%;
+  margin-top: 18px;
+  overflow-x: auto;
+}
+.manager-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 8px 0 rgba(255,145,0,0.06);
+  overflow: hidden;
+}
+.manager-table th, .manager-table td {
+  padding: 12px 10px;
+  text-align: left;
+  font-size: 1rem;
+}
+.manager-table th {
+  background: #fff7ed;
+  color: var(--main-orange);
+  font-weight: 700;
+}
+.manager-table tr:nth-child(even) {
+  background: #fffaf5;
+}
+.manager-img-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1.5px solid #eee;
+  box-shadow: 0 1px 4px 0 rgba(255,145,0,0.10);
+}
+.manager-edit-btn {
+  background: #fff;
+  color: var(--main-orange);
+  border: 1.5px solid var(--main-orange);
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.manager-edit-btn:hover {
+  background: var(--main-orange);
+  color: #fff;
+}
+.manager-delete-btn {
+  background: #fff;
+  color: #ff3b00;
+  border: 1.5px solid #ff3b00;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.manager-delete-btn:hover {
+  background: #ff3b00;
+  color: #fff;
+}
+@media (max-width: 700px) {
+  .manager-view {
+    padding: 10px 2px 18px 2px;
+    min-height: unset;
+  }
+  .manager-form {
+    padding: 10px 4px 6px 4px;
+    gap: 10px;
+  }
+  .manager-form-row {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .manager-list {
+    margin-top: 10px;
+  }
+  .manager-table th, .manager-table td {
+    padding: 8px 4px;
+    font-size: 0.95rem;
+  }
+}
+
+.manager-toggle-btn {
+  margin-left: 8px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid #aaa;
+  background: #fff;
+  color: #888;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.manager-toggle-on {
+  border-color: #ff9100;
+  color: #ff9100;
+}
+.manager-toggle-on:hover {
+  background: #ff9100;
+  color: #fff;
+}
+.manager-toggle-off {
+  border-color: #bbb;
+  color: #bbb;
+  opacity: 0.7;
+}
+.manager-toggle-off:hover {
+  background: #bbb;
+  color: #fff;
+}
+.menu-card.inactive, .menu-card.inactive * {
+  opacity: 0.5;
+  pointer-events: none;
+  filter: grayscale(0.7);
+}
+.menu-card .unavailable-label {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #bbb;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 8px;
+  z-index: 2;
+  box-shadow: 0 1px 4px 0 rgba(0,0,0,0.08);
 }
