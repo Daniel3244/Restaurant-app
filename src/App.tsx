@@ -5,6 +5,7 @@ import ManagerMenuView from './ManagerMenuView';
 import EmployeeOrdersView from './EmployeeOrdersView';
 import OrderNumbersScreen from './OrderNumbersScreen';
 import ManagerOrdersView from './ManagerOrdersView';
+import ManagerReportsView from './ManagerReportsView';
 
 const categories = [
   { id: 'napoje', name: 'Napoje' },
@@ -239,12 +240,13 @@ function App() {
         <nav className="manager-nav">
           <NavLink to="/manager/menu" className={({isActive}) => isActive ? 'manager-nav-link active' : 'manager-nav-link'}>Edycja menu</NavLink>
           <NavLink to="/manager/orders" className={({isActive}) => isActive ? 'manager-nav-link active' : 'manager-nav-link'}>Podgląd zamówień</NavLink>
-          <span className="manager-nav-link disabled">Raporty (wkrótce)</span>
+          <NavLink to="/manager/reports" className={({isActive}) => isActive ? 'manager-nav-link active' : 'manager-nav-link'}>Raporty</NavLink>
         </nav>
         <div className="manager-nav-content">
           <Routes>
             <Route path="/manager/menu" element={<ManagerMenuView />} />
             <Route path="/manager/orders" element={<ManagerOrdersView />} />
+            <Route path="/manager/reports" element={<ManagerReportsView />} />
             <Route path="*" element={<ManagerMenuView />} />
           </Routes>
         </div>
