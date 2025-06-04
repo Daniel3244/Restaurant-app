@@ -49,7 +49,11 @@ public class ManagerOrderController {
                 .filter(o -> (dateTo == null || (o.getCreatedAt() != null && !o.getCreatedAt().toLocalDate().isAfter(dateTo))))
                 .toList();
         String title = type.equals("stats") ? "Statystyki zamówień" : "Raport zamówień";
-        byte[] pdf = type.equals("stats") ? orderService.generateStatsReport(filtered, title) : orderService.generateOrdersReport(filtered, title);
+        String dateFromStr = dateFrom != null ? dateFrom.toString() : "";
+        String dateToStr = dateTo != null ? dateTo.toString() : "";
+        byte[] pdf = type.equals("stats") ?
+            orderService.generateStatsReport(filtered, title, dateFromStr, dateToStr) :
+            orderService.generateOrdersReport(filtered, title, dateFromStr, dateToStr);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + (type.equals("stats") ? "statystyki.pdf" : "zamowienia.pdf"))
                 .contentType(MediaType.APPLICATION_PDF)
