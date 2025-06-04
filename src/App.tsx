@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
 import ManagerMenuView from './ManagerMenuView';
+import EmployeeOrdersView from './EmployeeOrdersView';
+import OrderNumbersScreen from './OrderNumbersScreen';
 
 const categories = [
   { id: 'napoje', name: 'Napoje' },
@@ -39,6 +41,9 @@ function App() {
   const [addedId, setAddedId] = useState<number | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [modalItem, setModalItem] = useState<any | null>(null);
+  const [orderType, setOrderType] = useState<'na miejscu' | 'na wynos'>('na miejscu');
+  const [orderSent, setOrderSent] = useState<{number: number}|null>(null);
+  const [sendingOrder, setSendingOrder] = useState(false);
 
   const location = useLocation();
   const isManagerRoute = location.pathname.startsWith('/manager');
@@ -64,6 +69,45 @@ function App() {
   const removeFromOrder = (id: number) => {
     setOrder((prev) => prev.filter((o) => o.id !== id));
   };
+
+  const sendOrder = async () => {
+    if (order.length === 0) return;
+    setSendingOrder(true);
+    try {
+      const payload = {
+        type: orderType,
+        items: order.map(item => ({
+          menuItemId: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      };
+      const res = await fetch('http://localhost:8081/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrderSent({ number: data.orderNumber });
+        setOrder([]);
+        setShowSummary(false);
+        setSelectedCategory(null);
+      }
+    } finally {
+      setSendingOrder(false);
+    }
+  };
+
+  const renderOrderNumber = () => (
+    <div className="order-number-view">
+      <h2>Dziękujemy za zamówienie!</h2>
+      <p>Twój numer zamówienia:</p>
+      <div className="order-number">{orderSent?.number}</div>
+      <button onClick={() => setOrderSent(null)}>Nowe zamówienie</button>
+    </div>
+  );
 
   const renderStart = () => (
     <div className="start-view">
@@ -147,7 +191,17 @@ function App() {
       )}
       <div className="summary-bottom">
         <strong>Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zł</strong>
-        <button disabled={order.length === 0}>Potwierdź zamówienie</button>
+        <div style={{ margin: '16px 0' }}>
+          <label>
+            <input type="radio" name="orderType" value="na miejscu" checked={orderType === 'na miejscu'} onChange={() => setOrderType('na miejscu')} /> Na miejscu
+          </label>
+          <label style={{ marginLeft: 18 }}>
+            <input type="radio" name="orderType" value="na wynos" checked={orderType === 'na wynos'} onChange={() => setOrderType('na wynos')} /> Na wynos
+          </label>
+        </div>
+        <button disabled={order.length === 0 || sendingOrder} onClick={sendOrder} style={{ minWidth: 180 }}>
+          {sendingOrder ? 'Wysyłanie...' : 'Potwierdź zamówienie'}
+        </button>
         <button onClick={() => setShowSummary(false)}>Wróć</button>
         <button className="cancel-btn" onClick={() => setShowCancelConfirm(true)}>Anuluj zamówienie</button>
       </div>
@@ -180,6 +234,12 @@ function App() {
   if (isManagerRoute) {
     return <ManagerMenuView />;
   }
+  if (location.pathname.startsWith('/employee')) {
+    return <EmployeeOrdersView />;
+  }
+  if (location.pathname.startsWith('/screen')) {
+    return <OrderNumbersScreen />;
+  }
 
   return (
     <Routes>
@@ -187,7 +247,7 @@ function App() {
         path="/"
         element={
           <div className="main-layout" style={{ minHeight: '100vh', boxSizing: 'border-box', paddingTop: 0 }}>
-            {!showSummary && (
+            {!showSummary && !orderSent && (
               <aside className="sidebar">
                 <img
                   src="/img/logo.jpg"
@@ -211,7 +271,11 @@ function App() {
               </aside>
             )}
             <main className="content">
-              {!showSummary ? (
+              {orderSent ? (
+                <FadeTransition triggerKey="order-number">
+                  {renderOrderNumber()}
+                </FadeTransition>
+              ) : !showSummary ? (
                 <FadeTransition triggerKey={selectedCategory || 'start'}>
                   {selectedCategory ? renderMenu() : renderStart()}
                 </FadeTransition>
@@ -221,7 +285,7 @@ function App() {
                 </FadeTransition>
               )}
               {renderMenuModal()}
-              {!showSummary && (
+              {!showSummary && !orderSent && (
                 <div className="order-bar">
                   <span className="total-amount">Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zł</span>
                   <button onClick={() => setShowSummary(true)} disabled={order.length === 0}>
