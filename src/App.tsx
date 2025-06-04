@@ -38,6 +38,7 @@ function App() {
   const [showSummary, setShowSummary] = useState(false);
   const [addedId, setAddedId] = useState<number | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [modalItem, setModalItem] = useState<any | null>(null);
 
   const location = useLocation();
   const isManagerRoute = location.pathname.startsWith('/manager');
@@ -81,18 +82,52 @@ function App() {
   const renderMenu = () => (
     <div className="menu-grid">
       {menu.filter(m => m.category === selectedCategory).map(item => (
-        <div key={item.id} className={`menu-card${addedId === item.id ? ' added' : ''}${item.active === false ? ' inactive' : ''}`}> 
+        <div
+          key={item.id}
+          className={`menu-card${addedId === item.id ? ' added' : ''}${item.active === false ? ' inactive' : ''}`}
+          onClick={() => item.active !== false && setModalItem(item)}
+          style={{ cursor: item.active !== false ? 'pointer' : 'default' }}
+        >
           {!item.active && <div className="unavailable-label">Niedostępny</div>}
           <img src={item.imageUrl?.startsWith('/uploads/') ? `http://localhost:8081${item.imageUrl}` : item.imageUrl} alt={item.name} />
           <div className="menu-card-info">
             <span>{item.name}</span>
             <span className="price">{item.price} zł</span>
           </div>
-          <button onClick={() => addToOrder(item)} disabled={!item.active}>Dodaj do koszyka</button>
         </div>
       ))}
     </div>
-  )
+  );
+
+  const renderMenuModal = () => {
+    if (!modalItem) return null;
+    return (
+      <div className="menu-modal-overlay" onClick={() => setModalItem(null)}>
+        <div className="menu-modal" onClick={e => e.stopPropagation()}>
+          <img
+            className="menu-modal-img"
+            src={modalItem.imageUrl?.startsWith('/uploads/') ? `http://localhost:8081${modalItem.imageUrl}` : modalItem.imageUrl}
+            alt={modalItem.name}
+          />
+          <div className="menu-modal-info">
+            <h2>{modalItem.name}</h2>
+            <div className="menu-modal-price">{modalItem.price} zł</div>
+            <div className="menu-modal-desc">{modalItem.description}</div>
+            <div className="menu-modal-actions">
+              <button
+                className="menu-modal-add"
+                onClick={() => {
+                  addToOrder(modalItem);
+                  setModalItem(null);
+                }}
+              >Dodaj do koszyka</button>
+              <button className="menu-modal-cancel" onClick={() => setModalItem(null)}>Wróć</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const renderSummary = () => (
     <div className="summary">
@@ -185,6 +220,7 @@ function App() {
                   {renderSummary()}
                 </FadeTransition>
               )}
+              {renderMenuModal()}
               {!showSummary && (
                 <div className="order-bar">
                   <span className="total-amount">Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zł</span>
