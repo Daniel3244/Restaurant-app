@@ -3,31 +3,72 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="orders_stats_report" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="a1f2e3d4-5b6c-7d8e-9f01-23456789abcd">
     <style name="LiberationSans" isDefault="true" fontName="Liberation Sans" pdfFontName="Liberation Sans" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
     <parameter name="REPORT_TITLE" class="java.lang.String"/>
+    <parameter name="REPORT_DATE_RANGE" class="java.lang.String"/>
+    <parameter name="REPORT_DATE_FROM" class="java.lang.String"/>
+    <parameter name="REPORT_DATE_TO" class="java.lang.String"/>
     <field name="label" class="java.lang.String"/>
     <field name="value" class="java.lang.String"/>
     <title>
-        <band height="50">
+        <band height="125">
+            <image>
+                <reportElement x="0" y="0" width="60" height="40"/>
+                <imageExpression><![CDATA["img/logo.jpg"]]></imageExpression>
+            </image>
+            <staticText>
+                <reportElement x="0" y="45" width="120" height="12"/>
+                <textElement textAlignment="Left" verticalAlignment="Top">
+                    <font size="9" isBold="false"/>
+                </textElement>
+                <text>Data od:</text>
+            </staticText>
             <textField>
-                <reportElement x="0" y="0" width="555" height="30"/>
+                <reportElement x="40" y="45" width="80" height="12"/>
+                <textElement textAlignment="Left" verticalAlignment="Top">
+                    <font size="9" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{REPORT_DATE_FROM}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="0" y="60" width="120" height="12"/>
+                <textElement textAlignment="Left" verticalAlignment="Top">
+                    <font size="9" isBold="false"/>
+                </textElement>
+                <text>Data do:</text>
+            </staticText>
+            <textField>
+                <reportElement x="40" y="60" width="80" height="12"/>
+                <textElement textAlignment="Left" verticalAlignment="Top">
+                    <font size="9" isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{REPORT_DATE_TO}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="0" y="90" width="555" height="30"/>
                 <textElement textAlignment="Center" verticalAlignment="Middle">
                     <font size="18" isBold="true"/>
                 </textElement>
                 <textFieldExpression><![CDATA[$P{REPORT_TITLE}]]></textFieldExpression>
             </textField>
+            <line>
+                <reportElement x="0" y="124" width="555" height="1"/>
+            </line>
         </band>
     </title>
     <columnHeader>
-        <band height="24">
+        <band height="28">
+            <rectangle>
+                <reportElement x="0" y="0" width="555" height="28" backcolor="#f5f5f5"/>
+            </rectangle>
             <staticText>
-                <reportElement x="0" y="0" width="300" height="24"/>
-                <textElement>
+                <reportElement x="0" y="0" width="300" height="28"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
                     <font isBold="true"/>
                 </textElement>
                 <text>Statystyka</text>
             </staticText>
             <staticText>
-                <reportElement x="300" y="0" width="255" height="24"/>
-                <textElement>
+                <reportElement x="300" y="0" width="255" height="28"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
                     <font isBold="true"/>
                 </textElement>
                 <text>Wartość</text>
@@ -38,14 +79,25 @@
         <band height="32">
             <textField>
                 <reportElement x="0" y="0" width="300" height="32"/>
-                <textElement/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$F{label}]]></textFieldExpression>
             </textField>
             <textField>
                 <reportElement x="300" y="0" width="255" height="32"/>
-                <textElement/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$F{value}]]></textFieldExpression>
             </textField>
         </band>
     </detail>
+    <noData>
+        <band height="60">
+            <staticText>
+                <reportElement x="0" y="0" width="555" height="60"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font size="16" isBold="true"/>
+                </textElement>
+                <text>Brak danych do wyświetlenia</text>
+            </staticText>
+        </band>
+    </noData>
 </jasperReport>

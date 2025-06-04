@@ -36,11 +36,18 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    public byte[] generateOrdersReport(List<OrderEntity> orders, String title) throws Exception {
+    public byte[] generateOrdersReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
         InputStream reportStream = new ClassPathResource("orders_report.jrxml").getInputStream();
         JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
         Map<String, Object> params = new HashMap<>();
         params.put("REPORT_TITLE", title);
+        params.put("REPORT_DATE_FROM", dateFrom);
+        params.put("REPORT_DATE_TO", dateTo);
+        if (orders == null || orders.isEmpty()) {
+            // Pusta lista – wyświetl sekcję <noData>
+            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, new JREmptyDataSource());
+            return JasperExportManager.exportReportToPdf(jasperPrint);
+        }
         // Zamień listę pozycji na string do PDF
         List<Map<String, Object>> data = orders.stream().map(o -> {
             Map<String, Object> m = new HashMap<>();
@@ -54,16 +61,18 @@ public class OrderService {
                 .collect(Collectors.joining(", ")));
             return m;
         }).collect(Collectors.toList());
-        JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(data);
+        JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(data, false);
         JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, ds);
         return JasperExportManager.exportReportToPdf(jasperPrint);
     }
 
-    public byte[] generateStatsReport(List<OrderEntity> orders, String title) throws Exception {
+    public byte[] generateStatsReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
         InputStream reportStream = new ClassPathResource("orders_stats_report.jrxml").getInputStream();
         JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
         Map<String, Object> params = new HashMap<>();
         params.put("REPORT_TITLE", title);
+        params.put("REPORT_DATE_FROM", dateFrom);
+        params.put("REPORT_DATE_TO", dateTo);
         List<Map<String, String>> stats = new ArrayList<>();
         // Statystyka: liczba zamówień
         stats.add(Map.of("label", "Liczba zamówień", "value", String.valueOf(orders.size())));

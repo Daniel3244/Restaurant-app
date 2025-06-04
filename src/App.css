@@ -1419,3 +1419,62 @@ li {
     padding: 0 2px;
   }
 }
+
+.manager-datepicker {
+  margin-left: 8px;
+  margin-right: 16px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #bbb;
+  font-size: 1rem;
+  width: 140px;
+  background: #fff8f0;
+  color: #222;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.manager-datepicker:focus {
+  outline: none;
+  border: 1.5px solid #ff9800;
+  box-shadow: 0 0 0 2px #ffe0b2;
+}
+
+.manager-datepicker::placeholder {
+  color: #bdbdbd;
+  opacity: 1;
+}
+
+.react-datepicker__input-container input.manager-datepicker {
+  background: #fff8f0;
+  color: #222;
+}
+
+.react-datepicker {
+  font-family: inherit;
+  border-radius: 8px;
+  box-shadow: 0 2px 16px #0001;
+  border: 1px solid #ff9800;
+}
+
+.react-datepicker__header {
+  background: #fff3e0;
+  border-bottom: 1px solid #ff9800;
+}
+
+.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
+  background: #ff9800;
+  color: #fff;
+}
+
+.react-datepicker__day--today {
+  border-radius: 50%;
+  border: 1.5px solid #ff9800;
+}
+
+@media (max-width: 600px) {
+  .manager-datepicker {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+}
