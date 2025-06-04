@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { NavLink, Routes, Route, useLocation } from 'react-router-dom';
 import './App.css';
 import ManagerMenuView from './ManagerMenuView';
 import EmployeeOrdersView from './EmployeeOrdersView';
 import OrderNumbersScreen from './OrderNumbersScreen';
+import ManagerOrdersView from './ManagerOrdersView';
 
 const categories = [
   { id: 'napoje', name: 'Napoje' },
@@ -232,7 +233,23 @@ function App() {
   };
 
   if (isManagerRoute) {
-    return <ManagerMenuView />;
+    // Nawigacja panelu menedżera
+    return (
+      <div className="manager-nav-layout">
+        <nav className="manager-nav">
+          <NavLink to="/manager/menu" className={({isActive}) => isActive ? 'manager-nav-link active' : 'manager-nav-link'}>Edycja menu</NavLink>
+          <NavLink to="/manager/orders" className={({isActive}) => isActive ? 'manager-nav-link active' : 'manager-nav-link'}>Podgląd zamówień</NavLink>
+          <span className="manager-nav-link disabled">Raporty (wkrótce)</span>
+        </nav>
+        <div className="manager-nav-content">
+          <Routes>
+            <Route path="/manager/menu" element={<ManagerMenuView />} />
+            <Route path="/manager/orders" element={<ManagerOrdersView />} />
+            <Route path="*" element={<ManagerMenuView />} />
+          </Routes>
+        </div>
+      </div>
+    );
   }
   if (location.pathname.startsWith('/employee')) {
     return <EmployeeOrdersView />;
