@@ -5,13 +5,20 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 
-const STATUS_FLOW = ['Nowe', 'W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'];
+const STATUS_FLOW = ['W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'];
+const TODAY = new Date().toISOString().slice(0, 10);
+const TABS = [
+  { key: 'todo', label: 'Do zrealizowania', statuses: ['W realizacji', 'Gotowe'] },
+  { key: 'done', label: 'Zrealizowane', statuses: ['Zrealizowane'] },
+  { key: 'cancelled', label: 'Anulowane', statuses: ['Anulowane'] },
+];
 
 function EmployeeOrdersView() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState('todo');
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -69,9 +76,29 @@ function EmployeeOrdersView() {
     }
   };
 
+  // Filter orders: only today's orders
+  const todayOrders = orders.filter(order => order.createdAt && order.createdAt.slice(0, 10) === TODAY);
+  // Filter by tab
+  const filteredOrders = todayOrders.filter(order => {
+    const tab = TABS.find(t => t.key === activeTab);
+    return tab ? tab.statuses.includes(order.status) : true;
+  });
+
   return (
     <div className="manager-view">
       <h2>Panel pracownika – Zamówienia</h2>
+      <div style={{display:'flex',gap:8,marginBottom:16}}>
+        {TABS.map(tab => (
+          <button
+            key={tab.key}
+            className={activeTab === tab.key ? 'manager-save-btn' : 'manager-cancel-btn'}
+            style={{fontWeight:activeTab===tab.key?'bold':'normal'}}
+            onClick={()=>setActiveTab(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
       {loading ? <p>Ładowanie...</p> : error ? <p style={{color:'#ff3b00'}}>{error}</p> : (
         <table className="manager-table" style={{marginTop:24}}>
           <thead>
@@ -81,11 +108,12 @@ function EmployeeOrdersView() {
               <th>Typ</th>
               <th>Status</th>
               <th>Pozycje</th>
-              <th>Akcje</th>
+              {/* Show 'Akcje' column only in 'todo' tab */}
+              {activeTab === 'todo' && <th>Akcje</th>}
             </tr>
           </thead>
           <tbody>
-            {orders.map(order => (
+            {filteredOrders.map(order => (
               <tr key={order.id} style={{opacity: updating === order.id ? 0.5 : 1}}>
                 <td><b>{order.orderNumber}</b></td>
                 <td>{order.createdAt?.replace('T',' ').slice(0,16)}</td>
@@ -100,23 +128,30 @@ function EmployeeOrdersView() {
                     ))}
                   </ul>
                 </td>
-                <td>
-                  {/* Show status change button only if not Zrealizowane or Anulowane */}
-                  {order.status !== 'Zrealizowane' && order.status !== 'Anulowane' && (
-                    <button className="manager-save-btn" style={{marginBottom:6}} disabled={updating===order.id} onClick={()=>handleStatusChange(order)}>
-                      {nextStatus(order.status) ? `Do: ${nextStatus(order.status)}` : 'Zrealizowane'}
-                    </button>
-                  )}
-                  <br/>
-                  {/* Show Anuluj button only if not Zrealizowane or Anulowane */}
-                  {order.status !== 'Zrealizowane' && order.status !== 'Anulowane' && (
-                    <button className="manager-delete-btn" disabled={updating===order.id} onClick={()=>handleCancel(order)}>
-                      Anuluj
-                    </button>
-                  )}
-                </td>
+                {/* Show action buttons only in 'todo' tab */}
+                {activeTab === 'todo' && (
+                  <td>
+                    {order.status !== 'Zrealizowane' && order.status !== 'Anulowane' && (
+                      <button className="manager-save-btn" style={{marginBottom:6}} disabled={updating===order.id} onClick={()=>handleStatusChange(order)}>
+                        {nextStatus(order.status) ? `Do: ${nextStatus(order.status)}` : 'Zrealizowane'}
+                      </button>
+                    )}
+                    <br/>
+                    {order.status !== 'Zrealizowane' && order.status !== 'Anulowane' && (
+                      <button className="manager-delete-btn" disabled={updating===order.id} onClick={()=>handleCancel(order)}>
+                        Anuluj
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
+            {filteredOrders.length === 0 && (
+              <tr>
+                {/* colspan depends on tab: 6 for todo, 5 for others */}
+                <td colSpan={activeTab === 'todo' ? 6 : 5} style={{textAlign:'center'}}>Brak zamówień</td>
+              </tr>
+            )}
           </tbody>
         </table>
       )}

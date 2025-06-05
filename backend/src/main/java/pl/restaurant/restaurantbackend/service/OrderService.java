@@ -16,6 +16,7 @@ import pl.restaurant.restaurantbackend.repository.OrderRepository;
 import pl.restaurant.restaurantbackend.repository.OrderStatusChangeRepository;
 
 import java.io.InputStream;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,14 +31,17 @@ public class OrderService {
 
     @Transactional
     public OrderEntity createOrder(OrderEntity order) {
-        Long lastNumber = 1L;
-        OrderEntity lastOrder = orderRepository.findTopByOrderByOrderNumberDesc();
-        if (lastOrder != null) {
-            lastNumber = lastOrder.getOrderNumber() + 1;
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay().minusNanos(1);
+        OrderEntity lastOrderToday = orderRepository.findTopByCreatedAtBetweenOrderByOrderNumberDesc(startOfDay, endOfDay);
+        Long todayNumber = 1L;
+        if (lastOrderToday != null) {
+            todayNumber = lastOrderToday.getOrderNumber() + 1;
         }
-        order.setOrderNumber(lastNumber);
+        order.setOrderNumber(todayNumber);
         order.setCreatedAt(LocalDateTime.now());
-        order.setStatus("Nowe");
+        order.setStatus("W realizacji");
         return orderRepository.save(order);
     }
 

@@ -67,7 +67,7 @@ public class RestaurantBackendApplication {
 						createOrderItem(wrap, 1), createOrderItem(fries, 2))));
 				orders.add(createOrder(3L, LocalDateTime.now().minusDays(1), "na miejscu", "W realizacji", List.of(
 						createOrderItem(burger, 1), createOrderItem(wrap, 1))));
-				orders.add(createOrder(4L, LocalDateTime.now(), "na wynos", "Nowe", List.of(
+				orders.add(createOrder(4L, LocalDateTime.now(), "na wynos", "W realizacji", List.of(
 						createOrderItem(fries, 3))));
 				orders.add(createOrder(5L, LocalDateTime.now().minusDays(2), "na miejscu", "Zrealizowane", List.of(
 						createOrderItem(wrap, 2))));

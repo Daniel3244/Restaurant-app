@@ -10,7 +10,7 @@ import { pl } from 'date-fns/locale';
 
 const API_URL = 'http://localhost:8081/api/manager/orders/report';
 
-const STATUS_OPTIONS = ['Nowe', 'W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'];
+const STATUS_OPTIONS = ['W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'];
 const TYPE_OPTIONS = ['na miejscu', 'na wynos'];
 
 const ManagerReportsView: React.FC = () => {
@@ -325,19 +325,19 @@ const ManagerReportsView: React.FC = () => {
         <h3 style={{color:'#ff9100',marginBottom:8}}>Podgląd raportu</h3>
         <div style={{display:'flex',gap:12,flexWrap:'wrap',alignItems:'center',marginBottom:8}}>
           <label>Status:
-            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{marginLeft:6}}>
+            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{marginLeft:6,background:'#fff',color:'#ff9100',border:'1px solid #ff9100',borderRadius:4,padding:'4px 8px',fontWeight:500}}>
               <option value="">Wszystkie</option>
               {STATUS_OPTIONS.map(s=><option key={s} value={s}>{s}</option>)}
             </select>
           </label>
           <label>Typ:
-            <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{marginLeft:6}}>
+            <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{marginLeft:6,background:'#fff',color:'#ff9100',border:'1px solid #ff9100',borderRadius:4,padding:'4px 8px',fontWeight:500}}>
               <option value="">Wszystkie</option>
               {TYPE_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </label>
           <label>Sortuj po:
-            <select value={sortBy} onChange={e=>setSortBy(e.target.value as any)} style={{marginLeft:6}}>
+            <select value={sortBy} onChange={e=>setSortBy(e.target.value as any)} style={{marginLeft:6,background:'#fff',color:'#ff9100',border:'1px solid #ff9100',borderRadius:4,padding:'4px 8px',fontWeight:500}}>
               <option value="createdAt">Dacie</option>
               <option value="duration">Czasie realizacji</option>
             </select>
