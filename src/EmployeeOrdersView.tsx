@@ -1,7 +1,11 @@
+// EmployeeOrdersView.tsx
+// Employee view for managing and updating restaurant orders.
+// Allows status changes and cancellation (sets status to 'Anulowane').
+
 import { useEffect, useState } from 'react';
 import './App.css';
 
-const STATUS_FLOW = ['Nowe', 'W realizacji', 'Gotowe', 'Zrealizowane'];
+const STATUS_FLOW = ['Nowe', 'W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'];
 
 function EmployeeOrdersView() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -42,7 +46,7 @@ function EmployeeOrdersView() {
       await fetch(`http://localhost:8081/api/orders/${order.id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }) // Poprawka: wysyłaj JSON { status: ... }
+        body: JSON.stringify({ status: newStatus })
       });
       fetchOrders();
     } finally {
@@ -54,7 +58,11 @@ function EmployeeOrdersView() {
     if (!window.confirm('Czy na pewno anulować zamówienie?')) return;
     setUpdating(order.id);
     try {
-      await fetch(`http://localhost:8081/api/orders/${order.id}`, { method: 'DELETE' });
+      await fetch(`http://localhost:8081/api/orders/${order.id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Anulowane' })
+      });
       fetchOrders();
     } finally {
       setUpdating(null);
@@ -93,15 +101,19 @@ function EmployeeOrdersView() {
                   </ul>
                 </td>
                 <td>
-                  {order.status !== 'Zrealizowane' && (
+                  {/* Show status change button only if not Zrealizowane or Anulowane */}
+                  {order.status !== 'Zrealizowane' && order.status !== 'Anulowane' && (
                     <button className="manager-save-btn" style={{marginBottom:6}} disabled={updating===order.id} onClick={()=>handleStatusChange(order)}>
                       {nextStatus(order.status) ? `Do: ${nextStatus(order.status)}` : 'Zrealizowane'}
                     </button>
                   )}
                   <br/>
-                  <button className="manager-delete-btn" disabled={updating===order.id} onClick={()=>handleCancel(order)}>
-                    Anuluj
-                  </button>
+                  {/* Show Anuluj button only if not Zrealizowane or Anulowane */}
+                  {order.status !== 'Zrealizowane' && order.status !== 'Anulowane' && (
+                    <button className="manager-delete-btn" disabled={updating===order.id} onClick={()=>handleCancel(order)}>
+                      Anuluj
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

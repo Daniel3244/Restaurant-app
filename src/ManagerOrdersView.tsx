@@ -1,7 +1,11 @@
+// ManagerOrdersView.tsx
+// Manager view for listing and filtering all restaurant orders.
+// Supports filtering by status, including 'Anulowane'.
+
 import React, { useEffect, useState } from 'react';
 import './App.css';
 
-const STATUS_OPTIONS = ['Nowe', 'W realizacji', 'Gotowe', 'Zrealizowane'];
+const STATUS_OPTIONS = ['Nowe', 'W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'];
 const TYPE_OPTIONS = ['na miejscu', 'na wynos'];
 
 const ManagerOrdersView: React.FC = () => {
