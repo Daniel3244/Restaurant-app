@@ -6,6 +6,9 @@ import { pl } from 'date-fns/locale';
 
 const API_URL = 'http://localhost:8081/api/manager/orders/report';
 
+const STATUS_OPTIONS = ['Nowe', 'W realizacji', 'Gotowe', 'Zrealizowane'];
+const TYPE_OPTIONS = ['na miejscu', 'na wynos'];
+
 const ManagerReportsView: React.FC = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -46,6 +49,64 @@ const ManagerReportsView: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const [ordersPreview, setOrdersPreview] = useState<any[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [sortBy, setSortBy] = useState<'createdAt'|'duration'>('createdAt');
+
+  const fetchOrdersPreview = async () => {
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const params = new URLSearchParams();
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      if (statusFilter) params.append('status', statusFilter);
+      if (typeFilter) params.append('type', typeFilter);
+      const res = await fetch(`http://localhost:8081/api/manager/orders?${params.toString()}`);
+      if (!res.ok) throw new Error('Błąd pobierania zamówień');
+      let data = await res.json();
+      data = data.map((order: any) => {
+        let duration = null;
+        if (order.finishedAt && order.createdAt) {
+          const diff = new Date(order.finishedAt).getTime() - new Date(order.createdAt).getTime();
+          const totalSec = Math.floor(diff / 1000);
+          const min = Math.floor(totalSec / 60);
+          const sec = totalSec % 60;
+          duration = `${min} min ${sec.toString().padStart(2, '0')} s`;
+        }
+        return {
+          ...order,
+          duration
+        };
+      });
+      if (sortBy === 'duration') {
+        data = [...data].sort((a, b) => {
+          const getSec = (d: string|null) => {
+            if (!d) return 0;
+            const m = d.match(/(\d+) min (\d+) s/);
+            if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+            return 0;
+          };
+          return getSec(b.duration) - getSec(a.duration);
+        });
+      } else {
+        data = [...data].sort((a, b) => b.orderNumber - a.orderNumber);
+      }
+      setOrdersPreview(data);
+    } catch (e: any) {
+      setPreviewError(e.message);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchOrdersPreview();
+  }, [dateFrom, dateTo, statusFilter, typeFilter, sortBy]);
 
   const quickBtnStyle: React.CSSProperties = {
     padding: '4px 12px',
@@ -103,7 +164,6 @@ const ManagerReportsView: React.FC = () => {
             type="button"
             style={quickBtnStyle}
             onClick={() => {
-              // Ostatnie 7 dni (włącznie z dzisiaj)
               const now = new Date();
               const last7 = new Date(now);
               last7.setDate(now.getDate() - 6);
@@ -117,7 +177,6 @@ const ManagerReportsView: React.FC = () => {
             type="button"
             style={quickBtnStyle}
             onClick={() => {
-              // Ostatni tydzień (poniedziałek-niedziela poprzedniego tygodnia)
               const now = new Date();
               const day = now.getDay();
               const daysSinceMonday = ((day + 6) % 7);
@@ -192,7 +251,6 @@ const ManagerReportsView: React.FC = () => {
               const prevYear = now.getFullYear() - 1;
               const firstDayPrevYear = new Date(prevYear, 0, 1);
               const lastDayPrevYear = new Date(prevYear, 11, 31);
-              // Dodaj jeden dzień do obu dat, by uniknąć przesunięcia strefy czasowej
               firstDayPrevYear.setDate(firstDayPrevYear.getDate() + 1);
               lastDayPrevYear.setDate(lastDayPrevYear.getDate() + 1);
               setDateFrom(firstDayPrevYear.toISOString().slice(0, 10));
@@ -208,7 +266,6 @@ const ManagerReportsView: React.FC = () => {
               // Ten rok: od pierwszego dnia bieżącego roku do dziś
               const now = new Date();
               const firstDay = new Date(now.getFullYear(), 0, 1);
-              // Dodaj jeden dzień, by uniknąć przesunięcia na ostatni dzień poprzedniego roku
               firstDay.setDate(firstDay.getDate() + 1);
               setDateFrom(firstDay.toISOString().slice(0, 10));
               setDateTo(now.toISOString().slice(0, 10));
@@ -259,6 +316,66 @@ const ManagerReportsView: React.FC = () => {
       <div style={{marginTop:32, color:'#888', fontSize:'1.05rem'}}>
         <b>Raport zamówień</b> – szczegółowa lista zamówień z wybranego okresu.<br/>
         <b>Raport statystyk</b> – liczba zamówień, najczęściej kupowany produkt, suma i średnia wartości.
+      </div>
+      <div style={{marginTop:32}}>
+        <h3 style={{color:'#ff9100',marginBottom:8}}>Podgląd raportu</h3>
+        <div style={{display:'flex',gap:12,flexWrap:'wrap',alignItems:'center',marginBottom:8}}>
+          <label>Status:
+            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{marginLeft:6}}>
+              <option value="">Wszystkie</option>
+              {STATUS_OPTIONS.map(s=><option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+          <label>Typ:
+            <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} style={{marginLeft:6}}>
+              <option value="">Wszystkie</option>
+              {TYPE_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+          <label>Sortuj po:
+            <select value={sortBy} onChange={e=>setSortBy(e.target.value as any)} style={{marginLeft:6}}>
+              <option value="createdAt">Dacie</option>
+              <option value="duration">Czasie realizacji</option>
+            </select>
+          </label>
+          <button className="manager-save-btn" onClick={fetchOrdersPreview}>Odśwież</button>
+        </div>
+        {previewLoading ? <p>Ładowanie...</p> : previewError ? <p style={{color:'#ff3b00'}}>{previewError}</p> : (
+          <table className="manager-table" style={{marginTop:8}}>
+            <thead>
+              <tr>
+                <th>Numer</th>
+                <th>Data</th>
+                <th>Typ</th>
+                <th>Status</th>
+                <th>Pozycje</th>
+                <th>Czas realizacji</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ordersPreview.length === 0 ? (
+                <tr><td colSpan={6} style={{textAlign:'center'}}>Brak zamówień</td></tr>
+              ) : ordersPreview.map(order => (
+                <tr key={order.id}>
+                  <td><b>{order.orderNumber}</b></td>
+                  <td>{order.createdAt?.replace('T',' ').slice(0,16)}</td>
+                  <td>{order.type}</td>
+                  <td>{order.status}</td>
+                  <td>
+                    <ul style={{margin:0,padding:0}}>
+                      {order.items.map((item:any) => (
+                        <li key={item.id} style={{fontSize:'0.98rem'}}>
+                          {item.name} x {item.quantity} <span style={{color:'#ff9100'}}>{item.price} zł</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </td>
+                  <td>{order.duration !== null ? order.duration : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

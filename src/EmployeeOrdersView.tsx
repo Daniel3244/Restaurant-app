@@ -42,7 +42,7 @@ function EmployeeOrdersView() {
       await fetch(`http://localhost:8081/api/orders/${order.id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newStatus)
+        body: JSON.stringify({ status: newStatus }) // Poprawka: wysyłaj JSON { status: ... }
       });
       fetchOrders();
     } finally {
