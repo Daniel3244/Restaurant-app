@@ -2,16 +2,22 @@
 <!DOCTYPE jasperReport PUBLIC "-//JasperReports//DTD Report Design//EN" "http://jasperreports.sourceforge.net/dtds/jasperreport.dtd">
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="orders_report" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="b3e1c7e2-2b6a-4e2a-8b2e-1c7e22b6a4e2">
     <style name="LiberationSans" isDefault="true" fontName="Liberation Sans" pdfFontName="Liberation Sans" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+    <!-- Najpierw parametry -->
     <parameter name="REPORT_TITLE" class="java.lang.String"/>
     <parameter name="REPORT_DATE_FROM" class="java.lang.String"/>
     <parameter name="REPORT_DATE_TO" class="java.lang.String"/>
+    <parameter name="REPORT_TOTAL_SUM" class="java.lang.String"/>
+    <parameter name="REPORT_AVG_TIME" class="java.lang.String"/>
+    <!-- Potem pola -->
     <field name="orderNumber" class="java.lang.Long"/>
-    <field name="createdAt" class="java.time.LocalDateTime"/>
+    <field name="createdAt" class="java.lang.String"/>
     <field name="type" class="java.lang.String"/>
     <field name="status" class="java.lang.String"/>
     <field name="items" class="java.lang.String"/>
+    <field name="orderSum" class="java.lang.String"/>
+    <field name="readyToDone" class="java.lang.String"/>
     <title>
-        <band height="125">
+        <band height="140">
             <image>
                 <reportElement x="0" y="0" width="60" height="40"/>
                 <imageExpression><![CDATA["img/logo.jpg"]]></imageExpression>
@@ -45,98 +51,160 @@
                 <textFieldExpression><![CDATA[$P{REPORT_DATE_TO}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="0" y="90" width="555" height="30"/>
+                <reportElement x="0" y="90" width="555" height="40"/>
                 <textElement textAlignment="Center" verticalAlignment="Middle">
-                    <font size="18" isBold="true"/>
+                    <font size="20" isBold="true"/>
                 </textElement>
                 <textFieldExpression><![CDATA[$P{REPORT_TITLE}]]></textFieldExpression>
             </textField>
             <line>
-                <reportElement x="0" y="124" width="555" height="1"/>
+                <reportElement x="0" y="135" width="555" height="1"/>
             </line>
         </band>
     </title>
     <columnHeader>
-        <band height="28">
+        <band height="32">
             <rectangle>
-                <reportElement x="0" y="0" width="555" height="28" backcolor="#f5f5f5"/>
+                <reportElement x="0" y="0" width="555" height="32" backcolor="#f5f5f5"/>
             </rectangle>
             <staticText>
-                <reportElement x="0" y="0" width="60" height="28"/>
+                <reportElement x="0" y="0" width="50" height="32"/>
                 <textElement textAlignment="Center" verticalAlignment="Middle">
-                    <font isBold="true"/>
+                    <font isBold="true" size="11"/>
                 </textElement>
                 <text>Numer</text>
             </staticText>
             <staticText>
-                <reportElement x="60" y="0" width="120" height="28"/>
+                <reportElement x="50" y="0" width="90" height="32"/>
                 <textElement textAlignment="Center" verticalAlignment="Middle">
-                    <font isBold="true"/>
+                    <font isBold="true" size="11"/>
                 </textElement>
                 <text>Data</text>
             </staticText>
             <staticText>
-                <reportElement x="180" y="0" width="80" height="28"/>
+                <reportElement x="140" y="0" width="60" height="32"/>
                 <textElement textAlignment="Center" verticalAlignment="Middle">
-                    <font isBold="true"/>
+                    <font isBold="true" size="11"/>
                 </textElement>
                 <text>Typ</text>
             </staticText>
             <staticText>
-                <reportElement x="260" y="0" width="80" height="28"/>
+                <reportElement x="200" y="0" width="70" height="32"/>
                 <textElement textAlignment="Center" verticalAlignment="Middle">
-                    <font isBold="true"/>
+                    <font isBold="true" size="11"/>
                 </textElement>
                 <text>Status</text>
             </staticText>
             <staticText>
-                <reportElement x="340" y="0" width="215" height="28"/>
+                <reportElement x="270" y="0" width="120" height="32"/>
                 <textElement textAlignment="Center" verticalAlignment="Middle">
-                    <font isBold="true"/>
+                    <font isBold="true" size="11"/>
                 </textElement>
                 <text>Pozycje</text>
+            </staticText>
+            <staticText>
+                <reportElement x="390" y="0" width="60" height="32"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font isBold="true" size="11"/>
+                </textElement>
+                <text>Suma</text>
+            </staticText>
+            <staticText>
+                <reportElement x="450" y="0" width="105" height="32"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle">
+                    <font isBold="true" size="11"/>
+                </textElement>
+                <text>Czas od gotowe do zrealizowane</text>
             </staticText>
         </band>
     </columnHeader>
     <detail>
-        <band height="32">
+        <band height="36">
+            <line>
+                <reportElement x="0" y="35" width="645" height="1" forecolor="#e0e0e0"/>
+            </line>
             <textField>
-                <reportElement x="0" y="0" width="60" height="32">
+                <reportElement x="0" y="0" width="50" height="32">
                     <printWhenExpression><![CDATA[$F{orderNumber} != null]]></printWhenExpression>
                 </reportElement>
                 <textElement textAlignment="Center" verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$F{orderNumber}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="60" y="0" width="120" height="32">
+                <reportElement x="50" y="0" width="90" height="32">
                     <printWhenExpression><![CDATA[$F{orderNumber} != null]]></printWhenExpression>
                 </reportElement>
                 <textElement textAlignment="Center" verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{createdAt} != null ? $F{createdAt}.toString().replace('T',' ') : ""]]></textFieldExpression>
+                <textFieldExpression><![CDATA[$F{createdAt}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="180" y="0" width="80" height="32">
+                <reportElement x="140" y="0" width="60" height="32">
                     <printWhenExpression><![CDATA[$F{orderNumber} != null]]></printWhenExpression>
                 </reportElement>
                 <textElement textAlignment="Center" verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$F{type}]]></textFieldExpression>
             </textField>
             <textField>
-                <reportElement x="260" y="0" width="80" height="32">
+                <reportElement x="200" y="0" width="70" height="32">
                     <printWhenExpression><![CDATA[$F{orderNumber} != null]]></printWhenExpression>
                 </reportElement>
                 <textElement textAlignment="Center" verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$F{status}]]></textFieldExpression>
             </textField>
-            <textField isStretchWithOverflow="true">
-                <reportElement x="340" y="0" width="215" height="32">
+            <textField textAdjust="StretchHeight">
+                <reportElement x="270" y="0" width="120" height="32">
                     <printWhenExpression><![CDATA[$F{orderNumber} != null]]></printWhenExpression>
                 </reportElement>
                 <textElement verticalAlignment="Middle"/>
                 <textFieldExpression><![CDATA[$F{items} != null ? $F{items}.toString() : ""]]></textFieldExpression>
             </textField>
+            <textField>
+                <reportElement x="390" y="0" width="60" height="32">
+                    <printWhenExpression><![CDATA[$F{orderNumber} != null]]></printWhenExpression>
+                </reportElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                <textFieldExpression><![CDATA[$F{orderSum}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="450" y="0" width="105" height="32">
+                    <printWhenExpression><![CDATA[$F{orderNumber} != null]]></printWhenExpression>
+                </reportElement>
+                <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                <textFieldExpression><![CDATA[$F{readyToDone}]]></textFieldExpression>
+            </textField>
         </band>
     </detail>
+    <summary>
+        <band height="44">
+            <line>
+                <reportElement x="0" y="0" width="555" height="1" forecolor="#e0e0e0"/>
+            </line>
+            <staticText>
+                <reportElement x="0" y="10" width="220" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text>Suma wszystkich zamówień:</text>
+            </staticText>
+            <textField>
+                <reportElement x="220" y="10" width="100" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                <textFieldExpression><![CDATA[$P{REPORT_TOTAL_SUM}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="340" y="10" width="160" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle">
+                    <font size="12" isBold="true"/>
+                </textElement>
+                <text>Średni czas obsługi:</text>
+            </staticText>
+            <textField>
+                <reportElement x="500" y="10" width="55" height="20"/>
+                <textElement textAlignment="Left" verticalAlignment="Middle"/>
+                <textFieldExpression><![CDATA[$P{REPORT_AVG_TIME} == null || $P{REPORT_AVG_TIME}.trim().isEmpty() ? "-" : $P{REPORT_AVG_TIME}]]></textFieldExpression>
+            </textField>
+        </band>
+    </summary>
     <noData>
         <band height="300">
             <staticText>

@@ -3,20 +3,28 @@ import './App.css';
 
 const STATUS_DISPLAY = ['W realizacji', 'Gotowe'];
 
+interface Order {
+  id: number;
+  orderNumber: number;
+  status: string;
+}
+
 function OrderNumbersScreen() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
+    setError(null); 
     try {
       const res = await fetch('http://localhost:8081/api/orders');
       if (!res.ok) throw new Error('Błąd pobierania zamówień');
       const data = await res.json();
-      setOrders(data.filter((o:any) => STATUS_DISPLAY.includes(o.status)));
+      setOrders(Array.isArray(data) ? data.filter((o: any) => STATUS_DISPLAY.includes(o.status)) : []);
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || 'Wystąpił błąd');
+      setOrders([]); 
     } finally {
       setLoading(false);
     }

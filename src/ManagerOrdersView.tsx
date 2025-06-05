@@ -37,10 +37,8 @@ const ManagerOrdersView: React.FC = () => {
 
   useEffect(() => {
     fetchOrders();
-    // Auto-refresh every 15s
     const interval = setInterval(fetchOrders, 15000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line
   }, [filters]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

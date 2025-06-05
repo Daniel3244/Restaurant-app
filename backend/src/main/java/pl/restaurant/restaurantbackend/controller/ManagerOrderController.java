@@ -25,15 +25,17 @@ public class ManagerOrderController {
 
     @GetMapping
     public List<OrderEntity> getOrders(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String type
     ) {
         List<OrderEntity> all = orderRepository.findAll();
         return all.stream()
-                .filter(o -> date == null || (o.getCreatedAt() != null && o.getCreatedAt().toLocalDate().equals(date)))
-                .filter(o -> status == null || o.getStatus().equalsIgnoreCase(status))
-                .filter(o -> type == null || o.getType().equalsIgnoreCase(type))
+                .filter(o -> dateFrom == null || (o.getCreatedAt() != null && !o.getCreatedAt().toLocalDate().isBefore(dateFrom)))
+                .filter(o -> dateTo == null || (o.getCreatedAt() != null && !o.getCreatedAt().toLocalDate().isAfter(dateTo)))
+                .filter(o -> status == null || status.isEmpty() || o.getStatus().equalsIgnoreCase(status))
+                .filter(o -> type == null || type.isEmpty() || o.getType().equalsIgnoreCase(type))
                 .collect(Collectors.toList());
     }
 

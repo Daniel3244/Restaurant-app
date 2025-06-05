@@ -193,13 +193,27 @@ function App() {
       )}
       <div className="summary-bottom">
         <strong>Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zł</strong>
-        <div style={{ margin: '16px 0' }}>
-          <label>
-            <input type="radio" name="orderType" value="na miejscu" checked={orderType === 'na miejscu'} onChange={() => setOrderType('na miejscu')} /> Na miejscu
-          </label>
-          <label style={{ marginLeft: 18 }}>
-            <input type="radio" name="orderType" value="na wynos" checked={orderType === 'na wynos'} onChange={() => setOrderType('na wynos')} /> Na wynos
-          </label>
+        <div className="order-type-graphics">
+          <div
+            className={`order-type-option${orderType === 'na miejscu' ? ' selected' : ''}`}
+            onClick={() => setOrderType('na miejscu')}
+            tabIndex={0}
+            role="button"
+            aria-label="Na miejscu"
+          >
+            <img src="/img/eat-here.jpg" alt="Na miejscu" />
+            <span>Na miejscu</span>
+          </div>
+          <div
+            className={`order-type-option${orderType === 'na wynos' ? ' selected' : ''}`}
+            onClick={() => setOrderType('na wynos')}
+            tabIndex={0}
+            role="button"
+            aria-label="Na wynos"
+          >
+            <img src="/img/to-go.jpg" alt="Na wynos" />
+            <span>Na wynos</span>
+          </div>
         </div>
         <button disabled={order.length === 0 || sendingOrder} onClick={sendOrder} style={{ minWidth: 180 }}>
           {sendingOrder ? 'Wysyłanie...' : 'Potwierdź zamówienie'}

@@ -1,10 +1,13 @@
 package pl.restaurant.restaurantbackend.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import java.time.LocalDateTime;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class OrderEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,9 +25,17 @@ public class OrderEntity {
     @Column(nullable = false)
     private String status; // "Nowe", "W realizacji", "Gotowe", "Zrealizowane"
 
+    // NIE dodawaj @JsonManagedReference do items!
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "order_id")
     private List<OrderItem> items;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonManagedReference
+    private List<OrderStatusChange> statusHistory;
+
+    @Column
+    private LocalDateTime finishedAt; // data zakończenia (status Zrealizowane)
 
     // Gettery i settery
     public Long getId() { return id; }
@@ -39,4 +50,8 @@ public class OrderEntity {
     public void setStatus(String status) { this.status = status; }
     public List<OrderItem> getItems() { return items; }
     public void setItems(List<OrderItem> items) { this.items = items; }
+    public List<OrderStatusChange> getStatusHistory() { return statusHistory; }
+    public void setStatusHistory(List<OrderStatusChange> statusHistory) { this.statusHistory = statusHistory; }
+    public LocalDateTime getFinishedAt() { return finishedAt; }
+    public void setFinishedAt(LocalDateTime finishedAt) { this.finishedAt = finishedAt; }
 }

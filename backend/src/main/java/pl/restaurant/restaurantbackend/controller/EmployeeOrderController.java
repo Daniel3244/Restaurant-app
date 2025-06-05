@@ -5,8 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.restaurant.restaurantbackend.model.OrderEntity;
 import pl.restaurant.restaurantbackend.repository.OrderRepository;
+import pl.restaurant.restaurantbackend.service.OrderService;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -14,6 +16,8 @@ import java.util.List;
 public class EmployeeOrderController {
     @Autowired
     private OrderRepository orderRepository;
+    @Autowired
+    private OrderService orderService;
 
     @GetMapping
     public List<OrderEntity> getAllOrders() {
@@ -21,14 +25,19 @@ public class EmployeeOrderController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<OrderEntity> updateOrderStatus(@PathVariable Long id, @RequestBody String status) {
-        return orderRepository.findById(id)
-                .map(order -> {
-                    order.setStatus(status.replaceAll("\"", "")); // remove quotes if sent as JSON string
-                    orderRepository.save(order);
-                    return ResponseEntity.ok(order);
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<OrderEntity> updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        String status = request.get("status");
+        if (status == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            orderService.changeOrderStatus(id, status);
+            return orderRepository.findById(id)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @DeleteMapping("/{id}")
