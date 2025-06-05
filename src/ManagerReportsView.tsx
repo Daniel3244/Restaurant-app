@@ -1,3 +1,7 @@
+// ManagerReportsView.tsx
+// Manager view for generating and previewing order and statistics reports.
+// Supports filtering by status, including 'Anulowane'.
+
 import React, { useState } from 'react';
 import './App.css';
 import ReactDatePicker from 'react-datepicker';
@@ -6,7 +10,7 @@ import { pl } from 'date-fns/locale';
 
 const API_URL = 'http://localhost:8081/api/manager/orders/report';
 
-const STATUS_OPTIONS = ['Nowe', 'W realizacji', 'Gotowe', 'Zrealizowane'];
+const STATUS_OPTIONS = ['Nowe', 'W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'];
 const TYPE_OPTIONS = ['na miejscu', 'na wynos'];
 
 const ManagerReportsView: React.FC = () => {

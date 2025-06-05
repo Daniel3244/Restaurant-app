@@ -1,7 +1,9 @@
+// OrderEntity.java
+// JPA entity representing a customer order in the restaurant system.
+// Status can be: "Nowe", "W realizacji", "Gotowe", "Zrealizowane", "Anulowane"
 package pl.restaurant.restaurantbackend.model;
 
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import java.time.LocalDateTime;
@@ -23,7 +25,7 @@ public class OrderEntity {
     private String type; // "na miejscu" lub "na wynos"
 
     @Column(nullable = false)
-    private String status; // "Nowe", "W realizacji", "Gotowe", "Zrealizowane"
+    private String status; // "Nowe", "W realizacji", "Gotowe", "Zrealizowane", "Anulowane"
 
     // NIE dodawaj @JsonManagedReference do items!
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)

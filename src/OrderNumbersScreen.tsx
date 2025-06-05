@@ -1,3 +1,7 @@
+// OrderNumbersScreen.tsx
+// Public screen for displaying current order numbers by status.
+// Only shows orders with selected statuses.
+
 import { useEffect, useState } from 'react';
 import './App.css';
 

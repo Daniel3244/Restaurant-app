@@ -1,12 +1,13 @@
+// OrderService.java
+// Service for order business logic: creation, status changes, reporting.
+// Handles status change to 'Anulowane' (cancelled) without setting finishedAt.
+
 package pl.restaurant.restaurantbackend.service;
 
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.restaurant.restaurantbackend.model.OrderEntity;
@@ -15,7 +16,6 @@ import pl.restaurant.restaurantbackend.repository.OrderRepository;
 import pl.restaurant.restaurantbackend.repository.OrderStatusChangeRepository;
 
 import java.io.InputStream;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -137,7 +137,7 @@ public class OrderService {
         change.setStatus(newStatus);
         change.setChangedAt(LocalDateTime.now());
         orderStatusChangeRepository.save(change);
-        // Jeśli status to Zrealizowane, ustaw finishedAt
+        // Set finishedAt only for 'Zrealizowane', not for 'Anulowane'
         if ("Zrealizowane".equalsIgnoreCase(newStatus)) {
             order.setFinishedAt(LocalDateTime.now());
         }

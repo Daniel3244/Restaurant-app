@@ -1,3 +1,6 @@
+// EmployeeOrderController.java
+// REST controller for employee order operations (list, status change, cancel)
+// Handles order cancellation by setting status to 'Anulowane' instead of deleting.
 package pl.restaurant.restaurantbackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +46,7 @@ public class EmployeeOrderController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancelOrder(@PathVariable Long id) {
         if (orderRepository.existsById(id)) {
-            orderRepository.deleteById(id);
+            orderService.changeOrderStatus(id, "Anulowane");
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
