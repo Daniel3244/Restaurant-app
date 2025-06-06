@@ -15,8 +15,8 @@ public class OrderEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private Long orderNumber;
+    @Column(nullable = false)
+    private Long orderNumber; // usunięto unique = true
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

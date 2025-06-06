@@ -31,7 +31,7 @@ const ManagerOrdersView: React.FC = () => {
       const res = await fetch(`http://localhost:8081/api/manager/orders?${params.toString()}`);
       if (!res.ok) throw new Error('Błąd pobierania zamówień');
       const data = await res.json();
-      setOrders(data.sort((a: any, b: any) => b.orderNumber - a.orderNumber));
+      setOrders(data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch (e: any) {
       setError(e.message);
     } finally {
