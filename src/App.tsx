@@ -35,6 +35,7 @@ function FadeTransition({ children, triggerKey }: { children: React.ReactNode, t
   return <div ref={ref} className="fade-enter">{children}</div>;
 }
 
+// Main app
 function App() {
   const [menu, setMenu] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -334,4 +335,5 @@ function App() {
   );
 }
 
+// Exports
 export default App;

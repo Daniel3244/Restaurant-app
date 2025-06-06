@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+// State
 interface LoginViewProps {
   onLogin: (token: string, role: string) => void;
 }
@@ -10,6 +11,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Handlers
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -39,6 +41,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     }
   };
 
+  // Render
   return (
     <div className="login-container">
       <h2>Logowanie</h2>
@@ -66,4 +69,5 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   );
 };
 
+// Exports
 export default LoginView;

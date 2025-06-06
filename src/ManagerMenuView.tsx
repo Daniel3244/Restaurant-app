@@ -221,7 +221,6 @@ const ManagerMenuView: React.FC = () => {
       </form>
       {error && <div className="manager-error">{error}</div>}
       <div className="manager-list">
-        {/* Filtrowanie */}
         <table className="manager-table">
           <thead>
             <tr>
