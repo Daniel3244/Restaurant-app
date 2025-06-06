@@ -29,6 +29,7 @@ public class OrderService {
     @Autowired
     private OrderStatusChangeRepository orderStatusChangeRepository;
 
+    // Service
     @Transactional
     public OrderEntity createOrder(OrderEntity order) {
         LocalDate today = LocalDate.now();
@@ -45,6 +46,7 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
+    // Report generation
     public byte[] generateOrdersReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
         InputStream reportStream = new ClassPathResource("orders_report.jrxml").getInputStream();
         JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
@@ -96,6 +98,62 @@ public class OrderService {
         return JasperExportManager.exportReportToPdf(jasperPrint);
     }
 
+    public byte[] generateOrdersReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo, String timeFrom, String timeTo) throws Exception {
+        InputStream reportStream = new ClassPathResource("orders_report.jrxml").getInputStream();
+        JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
+        Map<String, Object> params = new HashMap<>();
+        params.put("REPORT_TITLE", title);
+        params.put("REPORT_DATE_FROM", dateFrom);
+        params.put("REPORT_DATE_TO", dateTo);
+        if (orders == null || orders.isEmpty()) {
+            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, new JREmptyDataSource());
+            return JasperExportManager.exportReportToPdf(jasperPrint);
+        }
+        List<Map<String, Object>> data = orders.stream().map(o -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("orderNumber", o.getOrderNumber());
+            if (o.getCreatedAt() != null) {
+                m.put("createdAt", o.getCreatedAt().toString().replace("T", " ").substring(0, 19));
+                m.put("createdDate", o.getCreatedAt().toLocalDate().toString());
+                m.put("createdTime", o.getCreatedAt().toLocalTime().toString().substring(0,5));
+            } else {
+                m.put("createdAt", "");
+                m.put("createdDate", "");
+                m.put("createdTime", "");
+            }
+            m.put("type", o.getType());
+            m.put("status", o.getStatus());
+            m.put("items", o.getItems().stream()
+                .map(i -> i.getName() + " x " + i.getQuantity() + " (" + String.format("%.2f zł", i.getPrice()) + ")")
+                .collect(Collectors.joining(", ")));
+            double sum = o.getItems().stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
+            m.put("orderSum", String.format("%.2f zł", sum));
+            if (o.getCreatedAt() != null && o.getFinishedAt() != null) {
+                long seconds = java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds();
+                long min = seconds / 60;
+                long sec = seconds % 60;
+                m.put("readyToDone", String.format("%d min %02d s", min, sec));
+            } else {
+                m.put("readyToDone", "-");
+            }
+            return m;
+        }).collect(Collectors.toList());
+        // KLUCZOWE: Ustaw prawidłowe źródło danych dla JasperReports
+        JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(data, false);
+        double totalSum = orders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
+        List<Long> allSeconds = orders.stream()
+            .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
+            .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
+            .collect(Collectors.toList());
+        double avgSec = allSeconds.isEmpty() ? 0 : allSeconds.stream().mapToLong(Long::longValue).average().orElse(0);
+        long avgMin = (long) (avgSec / 60);
+        long avgRemSec = (long) (avgSec % 60);
+        params.put("REPORT_TOTAL_SUM", String.format("%.2f zł", totalSum));
+        params.put("REPORT_AVG_TIME", allSeconds.isEmpty() ? "-" : String.format("%d min %02d s", avgMin, avgRemSec));
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, ds);
+        return JasperExportManager.exportReportToPdf(jasperPrint);
+    }
+
     public byte[] generateStatsReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
         InputStream reportStream = new ClassPathResource("orders_stats_report.jrxml").getInputStream();
         JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
@@ -132,6 +190,49 @@ public class OrderService {
         return JasperExportManager.exportReportToPdf(jasperPrint);
     }
 
+    public byte[] generateStatsReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo, String timeFrom, String timeTo) throws Exception {
+        InputStream reportStream = new ClassPathResource("orders_stats_report.jrxml").getInputStream();
+        JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
+        Map<String, Object> params = new HashMap<>();
+        params.put("REPORT_TITLE", title);
+        params.put("REPORT_DATE_FROM", dateFrom);
+        params.put("REPORT_DATE_TO", dateTo);
+        // Filtrowanie po godzinie (jeśli przekazano)
+        List<OrderEntity> filtered = orders;
+        if (timeFrom != null || timeTo != null) {
+            filtered = orders.stream().filter(o -> {
+                if (o.getCreatedAt() == null) return false;
+                String orderTime = o.getCreatedAt().toLocalTime().toString().substring(0,5);
+                boolean afterFrom = timeFrom == null || orderTime.compareTo(timeFrom) >= 0;
+                boolean beforeTo = timeTo == null || orderTime.compareTo(timeTo) <= 0;
+                return afterFrom && beforeTo;
+            }).collect(Collectors.toList());
+        }
+        List<Map<String, String>> stats = new ArrayList<>();
+        stats.add(Map.of("label", "Liczba zamówień", "value", String.valueOf(filtered.size())));
+        Map<String, Long> productCount = filtered.stream()
+                .flatMap(o -> o.getItems().stream())
+                .collect(Collectors.groupingBy(i -> i.getName(), Collectors.summingLong(i -> i.getQuantity())));
+        Optional<Map.Entry<String, Long>> topProduct = productCount.entrySet().stream().max(Map.Entry.comparingByValue());
+        stats.add(Map.of("label", "Najczęściej kupowany produkt", "value", topProduct.map(Map.Entry::getKey).orElse("Brak")));
+        double total = filtered.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
+        stats.add(Map.of("label", "Suma wartości zamówień", "value", String.format("%.2f zł", total)));
+        double avg = filtered.isEmpty() ? 0 : total / filtered.size();
+        stats.add(Map.of("label", "Średnia wartość zamówienia", "value", String.format("%.2f zł", avg)));
+        List<Long> allSeconds = filtered.stream()
+            .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
+            .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
+            .collect(Collectors.toList());
+        double avgSec = allSeconds.isEmpty() ? 0 : allSeconds.stream().mapToLong(Long::longValue).average().orElse(0);
+        long avgMin = (long) (avgSec / 60);
+        long avgRemSec = (long) (avgSec % 60);
+        stats.add(Map.of("label", "Średni czas obsługi", "value", allSeconds.isEmpty() ? "-" : String.format("%d min %02d s", avgMin, avgRemSec)));
+        JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(stats);
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, ds);
+        return JasperExportManager.exportReportToPdf(jasperPrint);
+    }
+
+    // Helpers
     @Transactional
     public void changeOrderStatus(Long orderId, String newStatus) {
         OrderEntity order = orderRepository.findById(orderId).orElseThrow();

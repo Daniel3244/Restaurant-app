@@ -15,6 +15,8 @@ const ManagerOrdersView: React.FC = () => {
   const [filters, setFilters] = useState({
     dateFrom: '',
     dateTo: '',
+    timeFrom: '',
+    timeTo: '',
     status: '',
     type: ''
   });
@@ -26,6 +28,8 @@ const ManagerOrdersView: React.FC = () => {
       const params = new URLSearchParams();
       if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
       if (filters.dateTo) params.append('dateTo', filters.dateTo);
+      if (filters.timeFrom) params.append('timeFrom', filters.timeFrom);
+      if (filters.timeTo) params.append('timeTo', filters.timeTo);
       if (filters.status) params.append('status', filters.status);
       if (filters.type) params.append('type', filters.type);
       const res = await fetch(`http://localhost:8081/api/manager/orders?${params.toString()}`);
@@ -50,9 +54,23 @@ const ManagerOrdersView: React.FC = () => {
     setFilters(f => ({ ...f, [name]: value }));
   };
 
+  // Filtrowanie po godzinie na froncie (jeśli backend nie obsługuje)
+  const filteredOrders = orders.filter(order => {
+    if (filters.timeFrom) {
+      const orderTime = order.createdAt ? order.createdAt.slice(11,16) : '';
+      if (orderTime < filters.timeFrom) return false;
+    }
+    if (filters.timeTo) {
+      const orderTime = order.createdAt ? order.createdAt.slice(11,16) : '';
+      if (orderTime > filters.timeTo) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="manager-view">
       <h2>Przegląd zamówień</h2>
+      {/* Filters */}
       <div className="manager-filters">
         <label>
           Data od:
@@ -61,6 +79,14 @@ const ManagerOrdersView: React.FC = () => {
         <label>
           Data do:
           <input type="date" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} />
+        </label>
+        <label>
+          Godzina od:
+          <input type="time" name="timeFrom" value={filters.timeFrom || ''} onChange={handleFilterChange} style={{background:'#fff',color:'#222',border:'1.5px solid #eee',borderRadius:4,padding:'4px 8px',fontWeight:500}} />
+        </label>
+        <label>
+          Godzina do:
+          <input type="time" name="timeTo" value={filters.timeTo || ''} onChange={handleFilterChange} style={{background:'#fff',color:'#222',border:'1.5px solid #eee',borderRadius:4,padding:'4px 8px',fontWeight:500}} />
         </label>
         <label>
           Status:
@@ -76,36 +102,48 @@ const ManagerOrdersView: React.FC = () => {
             {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </label>
-        <button className="manager-save-btn" onClick={fetchOrders} style={{marginLeft:12}}>Filtruj</button>
+        {/* Przeniesione przyciski na koniec */}
+        <div style={{display:'inline-flex',gap:8,marginLeft:16}}>
+          <button className="manager-save-btn" onClick={fetchOrders}>Filtruj</button>
+          <button type="button" className="manager-cancel-btn" onClick={() => setFilters(f => ({...f, dateFrom:'', dateTo:'', timeFrom:'', timeTo:'', status:'', type:''}))}>
+            Resetuj filtry
+          </button>
+          <button className="manager-save-btn" onClick={fetchOrders}>Odśwież</button>
+        </div>
       </div>
+      {/* Table */}
       {loading ? <p>Ładowanie...</p> : error ? <p style={{color:'#ff3b00'}}>{error}</p> : (
         <table className="manager-table" style={{marginTop:24}}>
           <thead>
             <tr>
               <th>Numer</th>
               <th>Data</th>
+              <th>Godzina</th>
               <th>Typ</th>
               <th>Status</th>
               <th>Pozycje</th>
             </tr>
           </thead>
           <tbody>
-            {orders.length === 0 ? (
-              <tr><td colSpan={5} style={{textAlign:'center'}}>Brak zamówień</td></tr>
-            ) : orders.map(order => (
+            {filteredOrders.length === 0 ? (
+              <tr><td colSpan={7} style={{textAlign:'center'}}>Brak zamówień</td></tr>
+            ) : filteredOrders.map(order => (
               <tr key={order.id}>
                 <td><b>{order.orderNumber}</b></td>
-                <td>{order.createdAt?.replace('T',' ').slice(0,16)}</td>
+                <td>{order.createdAt ? order.createdAt.replace('T',' ').slice(0,10) : ''}</td>
+                <td>{order.createdAt ? order.createdAt.replace('T',' ').slice(11,16) : ''}</td>
                 <td>{order.type}</td>
                 <td>{order.status}</td>
-                <td>
-                  <ul style={{margin:0,padding:0}}>
-                    {order.items.map((item:any) => (
-                      <li key={item.id} style={{fontSize:'0.98rem'}}>
-                        {item.name} x {item.quantity} <span style={{color:'#ff9100'}}>{item.price} zł</span>
-                      </li>
-                    ))}
-                  </ul>
+                <td style={{verticalAlign:'middle', textAlign:'left', height: '48px'}}>
+                  <div style={{display:'flex',alignItems:'center',height:'100%'}}>
+                    <ul style={{margin:0,padding:0,listStyle:'none',display:'block',width:'100%'}}>
+                      {order.items.map((item:any) => (
+                        <li key={item.id} style={{fontSize:'0.98rem',lineHeight:'1.6',display:'inline'}}>
+                          {item.name} x {item.quantity} <span style={{color:'#ff9100'}}>{item.price} zł</span>{' '}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </td>
               </tr>
             ))}

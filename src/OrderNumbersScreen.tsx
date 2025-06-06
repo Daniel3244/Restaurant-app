@@ -1,6 +1,4 @@
 // OrderNumbersScreen.tsx
-// Public screen for displaying current order numbers by status.
-// Only shows orders with selected statuses.
 
 import { useEffect, useState } from 'react';
 import './App.css';
@@ -13,11 +11,13 @@ interface Order {
   status: string;
 }
 
+// State
 function OrderNumbersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch
   const fetchOrders = async () => {
     setLoading(true);
     setError(null); 
@@ -40,6 +40,7 @@ function OrderNumbersScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  // Render
   return (
     <div className="order-numbers-screen">
       <h1>Numerki zamówień</h1>
@@ -67,4 +68,5 @@ function OrderNumbersScreen() {
   );
 }
 
+// Exports
 export default OrderNumbersScreen;

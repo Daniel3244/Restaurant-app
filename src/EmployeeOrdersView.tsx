@@ -119,14 +119,16 @@ function EmployeeOrdersView() {
                 <td>{order.createdAt?.replace('T',' ').slice(0,16)}</td>
                 <td>{order.type}</td>
                 <td>{order.status}</td>
-                <td>
-                  <ul style={{margin:0,padding:0}}>
-                    {order.items.map((item:any) => (
-                      <li key={item.id} style={{fontSize:'0.98rem'}}>
-                        {item.name} x {item.quantity} <span style={{color:'#ff9100'}}>{item.price} zł</span>
-                      </li>
-                    ))}
-                  </ul>
+                <td style={{verticalAlign:'middle', textAlign:'left', height: '48px'}}>
+                  <div style={{display:'flex',alignItems:'center',height:'100%'}}>
+                    <ul style={{margin:0,padding:0,listStyle:'none',display:'block',width:'100%'}}>
+                      {order.items.map((item:any) => (
+                        <li key={item.id} style={{fontSize:'0.98rem',lineHeight:'1.6',display:'inline'}}>
+                          {item.name} x {item.quantity} <span style={{color:'#ff9100'}}>{item.price} zł</span>{' '}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </td>
                 {/* Show action buttons only in 'todo' tab */}
                 {activeTab === 'todo' && (
