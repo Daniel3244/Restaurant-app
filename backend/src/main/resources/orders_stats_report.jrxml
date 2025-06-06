@@ -2,12 +2,17 @@
 <!DOCTYPE jasperReport PUBLIC "-//JasperReports//DTD Report Design//EN" "http://jasperreports.sourceforge.net/dtds/jasperreport.dtd">
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="orders_stats_report" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="a1f2e3d4-5b6c-7d8e-9f01-23456789abcd">
     <style name="LiberationSans" isDefault="true" fontName="Liberation Sans" pdfFontName="Liberation Sans" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+    <style name="rowEven" mode="Opaque" backcolor="#f7f7f7"/>
+    <style name="rowOdd" mode="Opaque" backcolor="#ffffff"/>
     <parameter name="REPORT_TITLE" class="java.lang.String"/>
     <parameter name="REPORT_DATE_RANGE" class="java.lang.String"/>
     <parameter name="REPORT_DATE_FROM" class="java.lang.String"/>
     <parameter name="REPORT_DATE_TO" class="java.lang.String"/>
     <field name="label" class="java.lang.String"/>
     <field name="value" class="java.lang.String"/>
+    <variable name="ROW_NUMBER" class="java.lang.Integer" calculation="Count">
+        <variableExpression><![CDATA[$F{label}]]></variableExpression>
+    </variable>
     <title>
         <band height="125">
             <image>
@@ -73,20 +78,45 @@
                 </textElement>
                 <text>Wartość</text>
             </staticText>
+            <line>
+                <reportElement x="0" y="27" width="555" height="1"/>
+            </line>
         </band>
     </columnHeader>
     <detail>
         <band height="32">
-            <textField>
-                <reportElement x="0" y="0" width="300" height="32"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{label}]]></textFieldExpression>
-            </textField>
-            <textField>
-                <reportElement x="300" y="0" width="255" height="32"/>
-                <textElement textAlignment="Center" verticalAlignment="Middle"/>
-                <textFieldExpression><![CDATA[$F{value}]]></textFieldExpression>
-            </textField>
+            <!-- Wiersz parzysty -->
+            <frame>
+                <reportElement style="rowEven" x="0" y="0" width="555" height="32">
+                    <printWhenExpression><![CDATA[$V{ROW_NUMBER} % 2 == 0]]></printWhenExpression>
+                </reportElement>
+                <textField>
+                    <reportElement x="0" y="0" width="300" height="32"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                    <textFieldExpression><![CDATA[$F{label}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement x="300" y="0" width="255" height="32"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                    <textFieldExpression><![CDATA[$F{value}]]></textFieldExpression>
+                </textField>
+            </frame>
+            <!-- Wiersz nieparzysty -->
+            <frame>
+                <reportElement style="rowOdd" x="0" y="0" width="555" height="32">
+                    <printWhenExpression><![CDATA[$V{ROW_NUMBER} % 2 != 0]]></printWhenExpression>
+                </reportElement>
+                <textField>
+                    <reportElement x="0" y="0" width="300" height="32"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                    <textFieldExpression><![CDATA[$F{label}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement x="300" y="0" width="255" height="32"/>
+                    <textElement textAlignment="Center" verticalAlignment="Middle"/>
+                    <textFieldExpression><![CDATA[$F{value}]]></textFieldExpression>
+                </textField>
+            </frame>
         </band>
     </detail>
     <noData>
