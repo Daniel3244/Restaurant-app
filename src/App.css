@@ -82,6 +82,120 @@ html, body {
   }
 }
 
+.landing-view {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+}
+
+.landing-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.landing-header img {
+  width: 96px;
+  height: 96px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.landing-tile {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 160px;
+}
+
+.landing-tile:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.landing-tile h2 {
+  font-size: 1.4rem;
+  color: var(--main-orange);
+  margin: 0;
+}
+
+.landing-tile p {
+  flex: 1;
+  margin: 0;
+  color: #555;
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+.landing-cta {
+  font-weight: 600;
+  color: var(--main-orange);
+}
+
+.manager-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.manager-logout-btn {
+  background: #fff;
+  color: var(--main-orange);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.manager-logout-btn:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.manager-view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.manager-view-header h2 {
+  margin: 0;
+}
+
+.manager-input {
+  background: #fff;
+  color: #222;
+  border: 1.5px solid #eee;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.login-hint {
+  margin-bottom: 16px;
+  color: #666;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   a:nth-of-type(2) .logo {
     animation: logo-spin infinite 20s linear;
@@ -1534,3 +1648,13 @@ li {
     height: 44px;
   }
 }
+
+.manager-datepicker {
+  background: #fff;
+  border: 1.5px solid #eee;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-weight: 500;
+  width: 100%;
+}
+

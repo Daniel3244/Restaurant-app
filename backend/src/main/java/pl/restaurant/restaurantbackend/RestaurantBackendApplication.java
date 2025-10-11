@@ -1,18 +1,20 @@
 package pl.restaurant.restaurantbackend;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import pl.restaurant.restaurantbackend.model.MenuItem;
 import pl.restaurant.restaurantbackend.model.OrderEntity;
 import pl.restaurant.restaurantbackend.model.OrderItem;
+import pl.restaurant.restaurantbackend.model.UserAccount;
 import pl.restaurant.restaurantbackend.repository.MenuItemRepository;
 import pl.restaurant.restaurantbackend.repository.OrderRepository;
-
-import java.time.LocalDateTime;
-import java.util.*;
+import pl.restaurant.restaurantbackend.repository.UserAccountRepository;
 
 @SpringBootApplication
 public class RestaurantBackendApplication {
@@ -23,16 +25,17 @@ public class RestaurantBackendApplication {
 
 	@Bean
 	public CommandLineRunner seedData(
-			@Autowired MenuItemRepository menuItemRepository,
-			@Autowired OrderRepository orderRepository
+			MenuItemRepository menuItemRepository,
+			OrderRepository orderRepository,
+			UserAccountRepository userAccountRepository
 	) {
 		return args -> {
 			if (menuItemRepository.count() == 0) {
 				MenuItem burger = new MenuItem();
 				burger.setName("Burger Klasyczny");
-				burger.setDescription("Wołowina, sałata, pomidor, ogórek, sos");
+				burger.setDescription("Wolowina, salata, pomidor, ogorek, sos");
 				burger.setPrice(22.99);
-				burger.setCategory("Burgery");
+				burger.setCategory("burgery");
 				burger.setImageUrl("/img/burgery.jpg");
 				menuItemRepository.save(burger);
 
@@ -40,7 +43,7 @@ public class RestaurantBackendApplication {
 				wrap.setName("Wrap Kurczak");
 				wrap.setDescription("Kurczak, warzywa, sos czosnkowy");
 				wrap.setPrice(18.50);
-				wrap.setCategory("Wrapy");
+				wrap.setCategory("wrapy");
 				wrap.setImageUrl("/img/wrapy.jpg");
 				menuItemRepository.save(wrap);
 
@@ -48,7 +51,7 @@ public class RestaurantBackendApplication {
 				fries.setName("Frytki");
 				fries.setDescription("Porcja frytek");
 				fries.setPrice(7.00);
-				fries.setCategory("Dodatki");
+				fries.setCategory("dodatki");
 				fries.setImageUrl("/img/dodatki.jpg");
 				menuItemRepository.save(fries);
 			}
@@ -59,7 +62,6 @@ public class RestaurantBackendApplication {
 				MenuItem wrap = menu.stream().filter(m -> m.getName().contains("Wrap")).findFirst().orElse(null);
 				MenuItem fries = menu.stream().filter(m -> m.getName().contains("Frytki")).findFirst().orElse(null);
 
-				// Zamówienia z różnymi datami, statusami, typami
 				List<OrderEntity> orders = new ArrayList<>();
 				orders.add(createOrder(1L, LocalDateTime.now().minusDays(5), "na miejscu", "Zrealizowane", List.of(
 						createOrderItem(burger, 2), createOrderItem(fries, 1))));
@@ -71,9 +73,25 @@ public class RestaurantBackendApplication {
 						createOrderItem(fries, 3))));
 				orders.add(createOrder(5L, LocalDateTime.now().minusDays(2), "na miejscu", "Zrealizowane", List.of(
 						createOrderItem(wrap, 2))));
-				for (OrderEntity o : orders) {
-					orderRepository.save(o);
+				for (OrderEntity order : orders) {
+					orderRepository.save(order);
 				}
+			}
+
+			if (userAccountRepository.count() == 0) {
+				BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+				UserAccount manager = new UserAccount();
+				manager.setUsername("manager");
+				manager.setPasswordHash(encoder.encode("manager123"));
+				manager.setRole("manager");
+				userAccountRepository.save(manager);
+
+				UserAccount employee = new UserAccount();
+				employee.setUsername("employee");
+				employee.setPasswordHash(encoder.encode("employee123"));
+				employee.setRole("employee");
+				userAccountRepository.save(employee);
 			}
 		};
 	}
@@ -90,9 +108,11 @@ public class RestaurantBackendApplication {
 
 	private static OrderItem createOrderItem(MenuItem menuItem, int quantity) {
 		OrderItem item = new OrderItem();
-		item.setMenuItemId(menuItem.getId());
-		item.setName(menuItem.getName());
-		item.setPrice(menuItem.getPrice());
+		if (menuItem != null) {
+			item.setMenuItemId(menuItem.getId());
+			item.setName(menuItem.getName());
+			item.setPrice(menuItem.getPrice());
+		}
 		item.setQuantity(quantity);
 		return item;
 	}
