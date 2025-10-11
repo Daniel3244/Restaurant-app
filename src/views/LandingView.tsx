@@ -3,54 +3,93 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../App.css';
 
+type TileConfig = {
+  key: string;
+  title: string;
+  description: string;
+  action: () => void;
+  cta: string;
+  badge?: string | null;
+  subtle?: boolean;
+};
+
 function LandingView() {
   const navigate = useNavigate();
   const auth = useAuth();
 
-  const tiles = useMemo(() => [
+  const tiles = useMemo<TileConfig[]>(() => [
     {
       key: 'order',
       title: 'Zamow teraz',
-      description: 'Tryb kiosku dla klientow.',
+      description: 'Tryb kiosku dla klientow przy stoliku.',
       action: () => navigate('/order'),
-      cta: 'Przejdz',
+      cta: 'Otworz kiosk',
+      badge: null,
     },
     {
       key: 'employee',
       title: 'Panel pracownika',
-      description: 'Obsluga zamowien na kuchni.',
-      action: () => navigate(auth.isAuthenticated && auth.role === 'employee' ? '/employee' : '/login?role=employee&next=/employee'),
-      cta: auth.role === 'employee' ? 'Otworz' : 'Zaloguj',
+      description: 'Podglad i aktualizacja statusow zamowien.',
+      action: () => navigate(auth.role === 'employee'
+        ? '/employee'
+        : '/login?role=employee&next=/employee'),
+      cta: auth.role === 'employee' ? 'Przejdz do panelu' : 'Zaloguj sie',
+      badge: auth.role === 'employee' ? 'Zalogowany' : null,
     },
     {
       key: 'manager',
       title: 'Panel menedzera',
-      description: 'Menu, raporty i zarzadzanie.',
-      action: () => navigate(auth.isAuthenticated && auth.role === 'manager' ? '/manager' : '/login?role=manager&next=/manager'),
-      cta: auth.role === 'manager' ? 'Otworz' : 'Zaloguj',
+      description: 'Zarzadzanie menu, raporty i kontrola zamowien.',
+      action: () => navigate(auth.role === 'manager'
+        ? '/manager'
+        : '/login?role=manager&next=/manager'),
+      cta: auth.role === 'manager' ? 'Przejdz do panelu' : 'Zaloguj sie',
+      badge: auth.role === 'manager' ? 'Zalogowany' : null,
     },
     {
       key: 'screen',
       title: 'Ekran numerow',
-      description: 'Widok dla klientow odbierajacych zamowienia.',
+      description: 'Widok dla klientow oczekujacych na odbior.',
       action: () => navigate('/screen'),
-      cta: 'Pokaz',
+      cta: 'Pokaz ekran',
+      badge: null,
+      subtle: true,
     },
-  ], [auth.isAuthenticated, auth.role, navigate]);
+  ], [auth.role, navigate]);
 
   return (
     <div className="landing-view">
       <header className="landing-header">
-        <img src="/img/logo.jpg" alt="Logo" />
-        <div>
-          <h1>Restauracja Self-service</h1>
-          <p>Wybierz obszar pracy.</p>
+        <img src="/img/logo.jpg" alt="Logo restauracji" />
+        <div className="landing-heading">
+          <h1>Centrum restauracji</h1>
+          <p>Wybierz obszar, w ktorym chcesz pracowac lub pomagac klientowi.</p>
+        </div>
+        <div className="landing-user-info">
+          {auth.isAuthenticated ? (
+            <>
+              <span className="landing-user-badge">Zalogowany jako</span>
+              <strong>{auth.role}</strong>
+              <button type="button" onClick={auth.logout} className="landing-logout-btn">
+                Wyloguj
+              </button>
+            </>
+          ) : (
+            <span className="landing-user-anon">Nie jestes zalogowany</span>
+          )}
         </div>
       </header>
       <div className="landing-grid">
         {tiles.map(tile => (
-          <button key={tile.key} className="landing-tile" onClick={tile.action}>
-            <h2>{tile.title}</h2>
+          <button
+            key={tile.key}
+            className={`landing-tile${tile.subtle ? ' landing-tile-subtle' : ''}`}
+            onClick={tile.action}
+          >
+            <div className="landing-tile-head">
+              <h2>{tile.title}</h2>
+              {tile.badge && <span className="landing-tile-badge">{tile.badge}</span>}
+            </div>
             <p>{tile.description}</p>
             <span className="landing-cta">{tile.cta}</span>
           </button>
@@ -61,4 +100,3 @@ function LandingView() {
 }
 
 export default LandingView;
-

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../App.css';
 
@@ -13,8 +13,14 @@ function ManagerLayout() {
     <div className="manager-nav-layout">
       <nav className="manager-nav">
         <div className="manager-nav-header">
-          <span>Panel menedzera</span>
-          <button className="manager-logout-btn" onClick={handleLogout}>Wyloguj</button>
+          <div className="manager-nav-title">
+            <span>Panel menedzera</span>
+            <small>{auth.role ? `Rola: ${auth.role}` : 'Brak roli'}</small>
+          </div>
+          <div className="manager-nav-actions">
+            <Link to="/" className="manager-nav-back">← Powrot</Link>
+            <button className="manager-logout-btn" onClick={handleLogout}>Wyloguj</button>
+          </div>
         </div>
         <NavLink to="menu" className={({ isActive }) => isActive ? 'manager-nav-link active' : 'manager-nav-link'}>
           Edycja menu
