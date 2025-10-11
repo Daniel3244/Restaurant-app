@@ -40,6 +40,20 @@ public class AuthService {
         // JWT jest bezstanowy, wiec wystarczy usunac token po stronie klienta
     }
 
+    @Transactional
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        if (newPassword == null || newPassword.trim().length() < 6) {
+            throw new IllegalArgumentException("Haslo musi miec co najmniej 6 znakow");
+        }
+        UserAccount user = userAccountRepository.findByUsernameIgnoreCase(username)
+                .orElseThrow(() -> new IllegalArgumentException("Nie znaleziono uzytkownika"));
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Bledne haslo");
+        }
+        user.setPasswordHash(passwordEncoder.encode(newPassword.trim()));
+        userAccountRepository.save(user);
+    }
+
     public record AuthSession(String token, String username, String role, Instant expiresAt) {}
 }
 

@@ -15,6 +15,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<Role>;
   logout: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 };
 
 const STORAGE_KEY = 'restaurant-auth';
@@ -93,13 +94,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state?.token]);
 
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    if (!state?.token) {
+      throw new Error('Brak aktywnej sesji');
+    }
+    const res = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${state.token}`,
+      },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (res.status === 204) {
+      return;
+    }
+    if (res.status === 400) {
+      const data = await res.json().catch(() => null) as { message?: string } | null;
+      throw new Error(data?.message ?? 'Nie udalo sie zmienic hasla');
+    }
+    if (res.status === 401) {
+      setState(null);
+      throw new Error('Sesja wygasla. Zaloguj sie ponownie.');
+    }
+    throw new Error('Nie udalo sie zmienic hasla. Sprobuj ponownie.');
+  }, [state]);
+
   const value = useMemo<AuthContextValue>(() => ({
     token: state?.token ?? null,
     role: state?.role ?? null,
     isAuthenticated: Boolean(state),
     login,
     logout,
-  }), [login, logout, state]);
+    changePassword,
+  }), [changePassword, login, logout, state]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

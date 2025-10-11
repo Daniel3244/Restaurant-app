@@ -111,9 +111,14 @@ function EmployeeOrdersView() {
 
   return (
     <div className="manager-view">
-      <div className="manager-view-header">
-        <h2>Panel pracownika - Zamowienia</h2>
-        <button className="manager-logout-btn" onClick={auth.logout}>Wyloguj</button>
+      <div className="manager-view-header manager-view-header--wrap">
+        <div>
+          <h2>Panel pracownika - Zamowienia</h2>
+        </div>
+        <div className="manager-nav-actions">
+          <a href="/" className="manager-nav-back">&larr; Powrot do strony glownej</a>
+          <button className="manager-logout-btn" onClick={auth.logout}>Wyloguj</button>
+        </div>
       </div>
       <div className="employee-tabs">
         {TABS.map(tab => (

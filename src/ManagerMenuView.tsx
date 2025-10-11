@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
@@ -41,6 +41,8 @@ const ManagerMenuView: React.FC = () => {
   const [filter, setFilter] = useState({ name: '', category: '', price: '', description: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const auth = useAuth();
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [lastLoaded, setLastLoaded] = useState<number | null>(null);
 
   const authHeaders = useMemo(() => {
     const headers: Record<string, string> = {};
@@ -57,6 +59,8 @@ const ManagerMenuView: React.FC = () => {
       if (!res.ok) throw new Error('Nie udalo sie pobrac menu');
       const data = (await res.json()) as MenuItem[];
       setMenu(data);
+      setLastLoaded(Date.now());
+      setError(null);
     } catch (e: any) {
       setError(e?.message ?? 'Nieznany blad');
     } finally {
@@ -67,6 +71,12 @@ const ManagerMenuView: React.FC = () => {
   useEffect(() => {
     fetchMenu();
   }, [authHeaders]);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timeout = window.setTimeout(() => setFeedback(null), 3500);
+    return () => window.clearTimeout(timeout);
+  }, [feedback]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -109,6 +119,7 @@ const ManagerMenuView: React.FC = () => {
       } else {
         setUploading(false);
         setError('Blad uploadu pliku: ' + (await res.text()));
+        setFeedback({ type: 'error', message: 'Nie udalo sie zapisac obrazka.' });
         return;
       }
       setUploading(false);
@@ -144,6 +155,7 @@ const ManagerMenuView: React.FC = () => {
       input.value = '';
     }
     fetchMenu();
+    setFeedback({ type: 'success', message: editId ? 'Zmiany zapisane.' : 'Dodano nowa pozycje.' });
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -159,13 +171,21 @@ const ManagerMenuView: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
+    if (!window.confirm('Usunac te pozycje z menu?')) {
+      return;
+    }
     await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
     fetchMenu();
+    setFeedback({ type: 'success', message: 'Pozycja zostala usunieta.' });
   };
 
   const toggleActive = async (item: MenuItem) => {
     await fetch(`${API_URL}/${item.id}/toggle-active`, { method: 'PATCH', headers: authHeaders });
     fetchMenu();
+    setFeedback({
+      type: 'success',
+      message: item.active ? 'Pozycja ukryta w menu.' : 'Pozycja ponownie widoczna.',
+    });
   };
 
   const filteredMenu = menu.filter(item =>
@@ -177,9 +197,22 @@ const ManagerMenuView: React.FC = () => {
 
   const resolveImage = (url: string) => (url?.startsWith('/uploads/') ? `${API_BASE_URL}${url}` : url);
 
+  const summary = useMemo(() => {
+    const active = menu.filter(item => item.active !== false).length;
+    const inactive = menu.length - active;
+    return {
+      total: menu.length,
+      active,
+      inactive,
+    };
+  }, [menu]);
+
   return (
     <div className="manager-view">
-      <h2>Zarzadzanie menu</h2>
+      <div className="manager-view-header manager-view-header--wrap">
+        <h2>Zarzadzanie menu</h2>
+        <a href="/" className="manager-nav-back">&larr; Powrot do strony glownej</a>
+      </div>
 
       <form className="manager-form" onSubmit={handleSubmit}>
         <div className="manager-form-row">
@@ -241,7 +274,32 @@ const ManagerMenuView: React.FC = () => {
         </div>
       </form>
 
+      {feedback && (
+        <div className={`manager-feedback ${feedback.type}`}>
+          {feedback.message}
+        </div>
+      )}
+
       {error && <div className="manager-error">{error}</div>}
+
+      <div className="manager-summary-grid">
+        <div className="manager-summary-card">
+          <span className="manager-summary-title">Pozycje w menu</span>
+          <strong>{summary.total}</strong>
+        </div>
+        <div className="manager-summary-card">
+          <span className="manager-summary-title">Aktywne</span>
+          <strong>{summary.active}</strong>
+        </div>
+        <div className="manager-summary-card">
+          <span className="manager-summary-title">Nieaktywne</span>
+          <strong>{summary.inactive}</strong>
+        </div>
+        <div className="manager-summary-card">
+          <span className="manager-summary-title">Ostatnie pobranie</span>
+          <strong>{lastLoaded ? new Date(lastLoaded).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '---'}</strong>
+        </div>
+      </div>
 
       <div className="manager-list">
         <table className="manager-table">
@@ -346,4 +404,6 @@ const ManagerMenuView: React.FC = () => {
 };
 
 export default ManagerMenuView;
+
+
 

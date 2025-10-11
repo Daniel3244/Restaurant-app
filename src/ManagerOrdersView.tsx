@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
 import { useAuth } from './context/AuthContext';
@@ -27,6 +27,7 @@ const ManagerOrdersView: React.FC = () => {
     status: '',
     type: ''
   });
+  const [lastRefresh, setLastRefresh] = useState<number | null>(null);
   const auth = useAuth();
 
   const authHeaders = useMemo(() => {
@@ -55,6 +56,7 @@ const ManagerOrdersView: React.FC = () => {
       if (!res.ok) throw new Error('Blad pobierania zamowien');
       const data = (await res.json()) as OrderRecord[];
       setOrders(data.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()));
+      setLastRefresh(Date.now());
     } catch (e: any) {
       setError(e?.message ?? 'Nieznany blad');
     } finally {
@@ -96,18 +98,42 @@ const ManagerOrdersView: React.FC = () => {
     return sum + orderSum;
   }, 0);
 
-  const readyCount = filteredOrders.filter(o => o.status === 'Gotowe').length;
+  const readyCount = filteredOrders.filter(o => o.status === 'Gotowe' || o.status === 'Zrealizowane').length;
+  const inProgressCount = filteredOrders.filter(o => o.status === 'W realizacji').length;
+
+  const formattedRefresh = lastRefresh
+    ? new Date(lastRefresh).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
+    : '---';
 
   return (
     <div className="manager-view">
-      <div className="manager-view-header">
-        <h2>Przeglad zamowien</h2>
-        <div className="manager-order-meta" style={{ marginTop: 0 }}>
-          <span>Razem: <strong>{filteredOrders.length}</strong></span>
-          <span>Gotowe: <strong>{readyCount}</strong></span>
-          <span>Suma: <strong>{totalSum.toFixed(2)} zl</strong></span>
+      <div className="manager-view-header manager-view-header--wrap">
+        <div>
+          <h2>Przeglad zamowien</h2>
+          <span className="manager-refresh-info">Odswiezono: {formattedRefresh}</span>
+        </div>
+        <a href="/" className="manager-nav-back">&larr; Powrot do strony glownej</a>
+      </div>
+
+      <div className="manager-summary-grid compact">
+        <div className="manager-summary-card">
+          <span className="manager-summary-title">Widoczne zamowienia</span>
+          <strong>{filteredOrders.length}</strong>
+        </div>
+        <div className="manager-summary-card">
+          <span className="manager-summary-title">W realizacji</span>
+          <strong>{inProgressCount}</strong>
+        </div>
+        <div className="manager-summary-card">
+          <span className="manager-summary-title">Gotowe / Zrealizowane</span>
+          <strong>{readyCount}</strong>
+        </div>
+        <div className="manager-summary-card">
+          <span className="manager-summary-title">Suma wartosci</span>
+          <strong>{totalSum.toFixed(2)} zl</strong>
         </div>
       </div>
+
       <div className="manager-filters">
         <label>
           Data od:
@@ -172,7 +198,11 @@ const ManagerOrdersView: React.FC = () => {
                 <td>{order.createdAt ? order.createdAt.replace('T', ' ').slice(0, 10) : ''}</td>
                 <td>{order.createdAt ? order.createdAt.replace('T', ' ').slice(11, 16) : ''}</td>
                 <td>{order.type}</td>
-                <td>{order.status}</td>
+                <td>
+                  <div className={`manager-status-pill ${order.status === 'Gotowe' || order.status === 'Zrealizowane' ? 'ready' : 'progress'}`}>
+                    {order.status}
+                  </div>
+                </td>
                 <td style={{ verticalAlign: 'middle', textAlign: 'left', height: '48px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
                     <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'block', width: '100%' }}>
@@ -194,4 +224,7 @@ const ManagerOrdersView: React.FC = () => {
 };
 
 export default ManagerOrdersView;
+
+
+
 
