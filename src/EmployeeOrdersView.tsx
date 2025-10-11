@@ -97,9 +97,17 @@ function EmployeeOrdersView() {
   const filteredOrders = todayOrders.filter(order => {
     const tab = TABS.find(t => t.key === activeTab);
     if (!tab) return true;
-    const statuses = Array.from(tab.statuses);
+    const statuses: readonly typeof STATUS_FLOW[number][] = tab.statuses;
     return statuses.includes(order.status);
   });
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const tab of TABS) {
+      counts[tab.key] = todayOrders.filter(order => (tab.statuses as readonly typeof STATUS_FLOW[number][]).includes(order.status)).length;
+    }
+    return counts;
+  }, [todayOrders]);
 
   return (
     <div className="manager-view">
@@ -107,15 +115,15 @@ function EmployeeOrdersView() {
         <h2>Panel pracownika - Zamowienia</h2>
         <button className="manager-logout-btn" onClick={auth.logout}>Wyloguj</button>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div className="employee-tabs">
         {TABS.map(tab => (
           <button
             key={tab.key}
-            className={activeTab === tab.key ? "manager-save-btn" : "manager-cancel-btn"}
-            style={{ fontWeight: activeTab === tab.key ? "bold" : "normal" }}
+            className={`employee-tab${activeTab === tab.key ? " active" : ""}`}
             onClick={() => setActiveTab(tab.key)}
           >
-            {tab.label}
+            <strong>{tab.label}</strong>
+            <small>{tabCounts[tab.key] ?? 0} dzisiaj</small>
           </button>
         ))}
       </div>
@@ -124,7 +132,8 @@ function EmployeeOrdersView() {
       ) : error ? (
         <p style={{ color: "#ff3b00" }}>{error}</p>
       ) : (
-        <table className="manager-table" style={{ marginTop: 24 }}>
+        <div className="employee-table-wrapper">
+        <table className="manager-table compact" style={{ marginTop: 12 }}>
           <thead>
             <tr>
               <th>Numer</th>
@@ -139,14 +148,23 @@ function EmployeeOrdersView() {
             {filteredOrders.map(order => (
               <tr key={order.id} style={{ opacity: updating === order.id ? 0.5 : 1 }}>
                 <td><b>{order.orderNumber}</b></td>
-                <td>{order.createdAt?.replace("T", " ").slice(0, 16)}</td>
-                <td>{order.type}</td>
-                <td>{order.status}</td>
+                <td>
+                  {order.createdAt?.replace("T", " ").slice(0, 16)}
+                  <div className="manager-order-meta mobile-break">
+                    <span>Typ: {order.type}</span>
+                    <span>Status: {order.status}</span>
+                  </div>
+                </td>
+                <td>
+                  <div className={`manager-status-pill ${order.status === "Gotowe" ? "ready" : "progress"}`}>
+                    {order.status}
+                  </div>
+                </td>
                 <td style={{ verticalAlign: "middle", textAlign: "left", height: "48px" }}>
                   <div style={{ display: "flex", alignItems: "center", height: "100%" }}>
                     <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "block", width: "100%" }}>
                       {order.items.map(item => (
-                        <li key={item.id} style={{ fontSize: "0.98rem", lineHeight: "1.6", display: "inline" }}>
+                        <li key={item.id} style={{ fontSize: "0.95rem", lineHeight: "1.6", display: "inline" }}>
                           {item.name} x {item.quantity} <span style={{ color: "#ff9100" }}>{item.price} zl</span>{" "}
                         </li>
                       ))}
@@ -188,10 +206,15 @@ function EmployeeOrdersView() {
             )}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
 }
 
 export default EmployeeOrdersView;
+
+
+
+
 

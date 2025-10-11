@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
+type Role = 'manager' | 'employee';
+
 const quickCredentials = [
   { role: 'manager', label: 'Wypelnij dane menedzera', username: 'manager', password: 'manager123' },
   { role: 'employee', label: 'Wypelnij dane pracownika', username: 'employee', password: 'employee123' },
@@ -19,15 +21,33 @@ const LoginView: React.FC = () => {
 
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const next = searchParams.get('next') || '/';
+  const rolesParam = searchParams.get('roles');
   const expectedRole = searchParams.get('role');
 
+  const allowedRoles: Role[] = useMemo(() => {
+    const roles: Role[] = [];
+    if (rolesParam) {
+      rolesParam.split(',').forEach(r => {
+        if (r === 'manager' || r === 'employee') {
+          roles.push(r);
+        }
+      });
+    }
+    if (roles.length === 0 && expectedRole && (expectedRole === 'manager' || expectedRole === 'employee')) {
+      roles.push(expectedRole);
+    }
+    return roles;
+  }, [rolesParam, expectedRole]);
+
+  const primaryRole = allowedRoles[0];
+
   useEffect(() => {
-    if (expectedRole === 'manager') {
+    if (primaryRole === 'manager') {
       setUsername('manager');
-    } else if (expectedRole === 'employee') {
+    } else if (primaryRole === 'employee') {
       setUsername('employee');
     }
-  }, [expectedRole]);
+  }, [primaryRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +55,7 @@ const LoginView: React.FC = () => {
     setError('');
     try {
       const role = await auth.login(username.trim(), password);
-      if (expectedRole && role !== expectedRole) {
+      if (allowedRoles.length > 0 && !allowedRoles.includes(role as Role)) {
         setError('Brak uprawnien do tej sekcji.');
         await auth.logout();
         return;
@@ -52,9 +72,9 @@ const LoginView: React.FC = () => {
     <div className="login-container">
       <div className="login-card">
         <h2>Logowanie</h2>
-        {expectedRole && (
+        {allowedRoles.length > 0 && (
           <p className="login-hint">
-            Wymagany poziom dostepu: <strong>{expectedRole}</strong>
+            Wymagane role: <strong>{allowedRoles.join(', ')}</strong>
           </p>
         )}
         <form className="login-form" onSubmit={handleSubmit} noValidate>
@@ -86,20 +106,21 @@ const LoginView: React.FC = () => {
         <div className="login-helpers">
           <span>Potrzebujesz testowych danych?</span>
           <div className="login-quick-buttons">
-            {quickCredentials.map(cred => (
-              <button
-                key={cred.role}
-                type="button"
-                className="login-quick-btn"
-                onClick={() => {
-                  setUsername(cred.username);
-                  setPassword(cred.password);
-                  setError('');
-                }}
-              >
-                {cred.label}
-              </button>
-            ))}
+            {(allowedRoles.length ? quickCredentials.filter(cred => allowedRoles.includes(cred.role)) : quickCredentials)
+              .map(cred => (
+                <button
+                  key={cred.role}
+                  type="button"
+                  className="login-quick-btn"
+                  onClick={() => {
+                    setUsername(cred.username);
+                    setPassword(cred.password);
+                    setError('');
+                  }}
+                >
+                  {cred.label}
+                </button>
+              ))}
           </div>
           <small>Zalogowanie wypelnia formularz, ale nadal wymaga zatwierdzenia przyciskiem.</small>
         </div>

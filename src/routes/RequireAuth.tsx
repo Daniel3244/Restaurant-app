@@ -13,16 +13,22 @@ export function RequireAuth() {
   return <Outlet />;
 }
 
-export function RequireRole({ role }: { role: 'manager' | 'employee' }) {
+export function RequireRole({ roles }: { roles: Array<'manager' | 'employee'> }) {
   const auth = useAuth();
   const location = useLocation();
 
+  const allowedRoles = roles;
+
   if (!auth.isAuthenticated) {
-    const params = new URLSearchParams({ next: location.pathname + location.search, role });
+    const params = new URLSearchParams({ next: location.pathname + location.search });
+    if (allowedRoles.length > 0) {
+      params.set('roles', allowedRoles.join(','));
+      params.set('role', allowedRoles[0]);
+    }
     return <Navigate to={`/login?${params.toString()}`} replace />;
   }
 
-  if (auth.role !== role) {
+  if (!auth.role || !allowedRoles.includes(auth.role)) {
     return <Navigate to="/" replace />;
   }
 

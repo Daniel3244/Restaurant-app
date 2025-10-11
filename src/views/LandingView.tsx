@@ -17,6 +17,10 @@ function LandingView() {
   const navigate = useNavigate();
   const auth = useAuth();
 
+  const isManager = auth.role === 'manager';
+  const isEmployee = auth.role === 'employee';
+  const canUseEmployeePanel = isManager || isEmployee;
+
   const tiles = useMemo<TileConfig[]>(() => [
     {
       key: 'order',
@@ -30,21 +34,21 @@ function LandingView() {
       key: 'employee',
       title: 'Panel pracownika',
       description: 'Podglad i aktualizacja statusow zamowien.',
-      action: () => navigate(auth.role === 'employee'
+      action: () => navigate(canUseEmployeePanel
         ? '/employee'
-        : '/login?role=employee&next=/employee'),
-      cta: auth.role === 'employee' ? 'Przejdz do panelu' : 'Zaloguj sie',
-      badge: auth.role === 'employee' ? 'Zalogowany' : null,
+        : '/login?roles=manager,employee&next=/employee'),
+      cta: canUseEmployeePanel ? 'Przejdz do panelu' : 'Zaloguj sie',
+      badge: canUseEmployeePanel ? (isManager ? 'Dostep menedzera' : 'Zalogowany') : null,
     },
     {
       key: 'manager',
       title: 'Panel menedzera',
       description: 'Zarzadzanie menu, raporty i kontrola zamowien.',
-      action: () => navigate(auth.role === 'manager'
+      action: () => navigate(isManager
         ? '/manager'
-        : '/login?role=manager&next=/manager'),
-      cta: auth.role === 'manager' ? 'Przejdz do panelu' : 'Zaloguj sie',
-      badge: auth.role === 'manager' ? 'Zalogowany' : null,
+        : '/login?roles=manager&next=/manager'),
+      cta: isManager ? 'Przejdz do panelu' : 'Zaloguj sie',
+      badge: isManager ? 'Zalogowany' : null,
     },
     {
       key: 'screen',

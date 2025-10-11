@@ -91,3 +91,10 @@ export function useAuth() {
   }
   return ctx;
 }
+
+export function useRoleAccess(required: readonly Role[]): boolean {
+  const auth = useAuth();
+  if (!auth.isAuthenticated || !auth.role) return false;
+  return required.includes(auth.role);
+}
+

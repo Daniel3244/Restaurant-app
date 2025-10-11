@@ -20,11 +20,11 @@ function App() {
       <Route path="/order" element={<OrderingKioskView />} />
       <Route path="/screen" element={<OrderNumbersScreen />} />
 
-      <Route element={<RequireRole role="employee" />}>
+      <Route element={<RequireRole roles={['manager','employee']} />}>
         <Route path="/employee" element={<EmployeeOrdersView />} />
       </Route>
 
-      <Route element={<RequireRole role="manager" />}>
+      <Route element={<RequireRole roles={['manager']} />}>
         <Route path="/manager" element={<ManagerLayout />}>
           <Route index element={<Navigate to="menu" replace />} />
           <Route path="menu" element={<ManagerMenuView />} />
@@ -39,3 +39,7 @@ function App() {
 }
 
 export default App;
+
+
+
+

@@ -91,9 +91,23 @@ const ManagerOrdersView: React.FC = () => {
     setFilters({ dateFrom: '', dateTo: '', timeFrom: '', timeTo: '', status: '', type: '' });
   };
 
+  const totalSum = filteredOrders.reduce((sum, order) => {
+    const orderSum = order.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    return sum + orderSum;
+  }, 0);
+
+  const readyCount = filteredOrders.filter(o => o.status === 'Gotowe').length;
+
   return (
     <div className="manager-view">
-      <h2>Przeglad zamowien</h2>
+      <div className="manager-view-header">
+        <h2>Przeglad zamowien</h2>
+        <div className="manager-order-meta" style={{ marginTop: 0 }}>
+          <span>Razem: <strong>{filteredOrders.length}</strong></span>
+          <span>Gotowe: <strong>{readyCount}</strong></span>
+          <span>Suma: <strong>{totalSum.toFixed(2)} zl</strong></span>
+        </div>
+      </div>
       <div className="manager-filters">
         <label>
           Data od:
