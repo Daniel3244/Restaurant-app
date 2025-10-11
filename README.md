@@ -16,31 +16,34 @@ Aplikacja webowa do zarzadzania restauracja.
 ## Uruchomienie
 
 ### Backend
-`
+```powershell
 cd backend
 ./mvnw.cmd spring-boot:run
-`
+```
 
-Domyslnie uruchamia sie profil dev z baza H2 w pamieci, wiec nie potrzeba lokalnego MySQL. Po starcie seedowane sa konta:
+Domyslnie wlacza sie profil `dev` (H2 w pamieci), wiec nie trzeba lokalnego MySQL. Przy starcie seedowane sa konta testowe:
 
 - manager / manager123
 - employee / employee123
 
-Aby uzyc MySQL ustaw profil prod, np.:
-`
+Aby uzyc bazy MySQL uruchom serwer z profilem `prod`:
+```powershell
 set SPRING_PROFILES_ACTIVE=prod
+set APP_JWT_SECRET=twoj-sekret-prod
 ./mvnw.cmd spring-boot:run
-`
-(Administracyjnie upewnij sie, ze baza estaurantdb i dane logowania zgadzaja sie z pplication-prod.properties.)
+```
+Upewnij sie, ze baza `restaurantdb` i dane logowania pokrywaja sie z plikiem `application-prod.properties`.
+
+> **JWT**: tokeny sa podpisywane kluczem HMAC pobieranym z `APP_JWT_SECRET` (domyslnie `change-me-in-prod`). TTL tokenu to 8 godzin (`APP_JWT_TTL_HOURS`).
 
 ### Frontend
-`
+```powershell
 npm install
 npm run dev
-`
+```
 
-W razie potrzeby adres API mozesz nadpisac w .env zmienna VITE_API_BASE_URL.
+Adres API mozna nadpisac w pliku `.env` zmienna `VITE_API_BASE_URL`.
 
 ---
 
-Najwazniejsze instrukcje beda rozbudowywane wraz z projektem.
+Instrukcje beda dalej rozbudowywane wraz z projektem.

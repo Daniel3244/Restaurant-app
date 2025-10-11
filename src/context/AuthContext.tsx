@@ -6,6 +6,7 @@ type Role = 'manager' | 'employee';
 type AuthState = {
   token: string;
   role: Role;
+  expiresAt: number;
 };
 
 type AuthContextValue = {
@@ -20,17 +21,23 @@ const STORAGE_KEY = 'restaurant-auth';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState | null>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as AuthState;
-      return parsed;
-    } catch {
+function loadInitialState(): AuthState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AuthState;
+    if (parsed.expiresAt <= Date.now()) {
+      localStorage.removeItem(STORAGE_KEY);
       return null;
     }
-  });
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<AuthState | null>(loadInitialState);
 
   useEffect(() => {
     if (state) {
@@ -38,6 +45,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       localStorage.removeItem(STORAGE_KEY);
     }
+  }, [state]);
+
+  useEffect(() => {
+    if (!state) return;
+    if (state.expiresAt <= Date.now()) {
+      setState(null);
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      setState(null);
+    }, state.expiresAt - Date.now());
+    return () => window.clearTimeout(timeout);
   }, [state]);
 
   const login = useCallback(async (username: string, password: string) => {
@@ -54,24 +73,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Nie udalo sie zalogowac. Sprobuj ponownie.');
     }
 
-    const data = await res.json() as { token: string; role: Role };
-    setState({ token: data.token, role: data.role });
+    const data = await res.json() as { token: string; role: Role; expiresAt: number };
+    setState({ token: data.token, role: data.role, expiresAt: data.expiresAt });
     return data.role;
   }, []);
 
   const logout = useCallback(async () => {
-    if (state?.token) {
+    const currentToken = state?.token;
+    setState(null);
+    if (currentToken) {
       try {
         await fetch(`${API_BASE_URL}/api/auth/logout`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${state.token}` },
+          headers: { Authorization: `Bearer ${currentToken}` },
         });
       } catch {
-        // logout is best-effort; if the call fails we still clear the local session
+        // logout is best-effort; if backend nie odpowie, i tak czyścimy lokalny stan
       }
     }
-    setState(null);
-  }, [state]);
+  }, [state?.token]);
 
   const value = useMemo<AuthContextValue>(() => ({
     token: state?.token ?? null,
@@ -97,4 +117,3 @@ export function useRoleAccess(required: readonly Role[]): boolean {
   if (!auth.isAuthenticated || !auth.role) return false;
   return required.includes(auth.role);
 }
-

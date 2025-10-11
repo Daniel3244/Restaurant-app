@@ -1,11 +1,7 @@
 package pl.restaurant.restaurantbackend.service;
 
 import java.time.Instant;
-import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +12,11 @@ import pl.restaurant.restaurantbackend.repository.UserAccountRepository;
 public class AuthService {
     private final UserAccountRepository userAccountRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    private final Map<String, AuthSession> activeSessions = new ConcurrentHashMap<>();
-    private static final Duration SESSION_TTL = Duration.ofHours(8);
+    private final JwtService jwtService;
 
-    public AuthService(UserAccountRepository userAccountRepository) {
+    public AuthService(UserAccountRepository userAccountRepository, JwtService jwtService) {
         this.userAccountRepository = userAccountRepository;
+        this.jwtService = jwtService;
     }
 
     @Transactional(readOnly = true)
@@ -28,35 +24,23 @@ public class AuthService {
         return userAccountRepository.findByUsernameIgnoreCase(username)
                 .filter(user -> passwordEncoder.matches(rawPassword, user.getPasswordHash()))
                 .map(user -> {
-                    cleanupExpiredSessions();
-                    String token = UUID.randomUUID().toString();
-                    AuthSession session = new AuthSession(token, user.getUsername(), user.getRole(), Instant.now());
-                    activeSessions.put(token, session);
-                    return session;
+                    String token = jwtService.generateToken(user.getUsername(), user.getRole());
+                    return jwtService.parseToken(token)
+                            .map(payload -> new AuthSession(token, payload.username(), payload.role(), payload.expiresAt()))
+                            .orElseThrow();
                 });
     }
 
     public Optional<AuthSession> validateToken(String token) {
-        cleanupExpiredSessions();
-        AuthSession session = activeSessions.get(token);
-        if (session == null) {
-            return Optional.empty();
-        }
-        if (session.issuedAt().plus(SESSION_TTL).isBefore(Instant.now())) {
-            activeSessions.remove(token);
-            return Optional.empty();
-        }
-        return Optional.of(session);
+        return jwtService.parseToken(token)
+                .map(payload -> new AuthSession(token, payload.username(), payload.role(), payload.expiresAt()));
     }
 
     public void invalidateToken(String token) {
-        activeSessions.remove(token);
+        // JWT jest bezstanowy, wiec wystarczy usunac token po stronie klienta
     }
 
-    private void cleanupExpiredSessions() {
-        Instant now = Instant.now();
-        activeSessions.values().removeIf(session -> session.issuedAt().plus(SESSION_TTL).isBefore(now));
-    }
-
-    public record AuthSession(String token, String username, String role, Instant issuedAt) {}
+    public record AuthSession(String token, String username, String role, Instant expiresAt) {}
 }
+
+
