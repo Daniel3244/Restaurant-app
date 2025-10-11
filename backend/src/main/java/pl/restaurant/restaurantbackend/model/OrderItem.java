@@ -13,7 +13,6 @@ public class OrderItem {
     private int quantity;
     private double price;
 
-    // Gettery i settery
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getMenuItemId() { return menuItemId; }

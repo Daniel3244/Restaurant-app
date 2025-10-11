@@ -1,6 +1,3 @@
-// EmployeeOrderController.java
-// REST controller for employee order operations (list, status change, cancel)
-// Handles order cancellation by setting status to 'Anulowane' instead of deleting.
 package pl.restaurant.restaurantbackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;

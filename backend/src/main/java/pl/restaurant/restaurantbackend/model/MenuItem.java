@@ -15,7 +15,6 @@ public class MenuItem {
     private String category;
     private boolean active = true;
 
-    // Gettery i settery
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }

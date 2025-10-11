@@ -1,6 +1,3 @@
-// OrderEntity.java
-// JPA entity representing a customer order in the restaurant system.
-// Status can be: "W realizacji", "Gotowe", "Zrealizowane", "Anulowane"
 package pl.restaurant.restaurantbackend.model;
 
 import jakarta.persistence.*;
@@ -16,18 +13,20 @@ public class OrderEntity {
     private Long id;
 
     @Column(nullable = false)
-    private Long orderNumber; // usunięto unique = true
+    private Long orderNumber;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
-    private String type; // "na miejscu" lub "na wynos"
+    // order type: "na miejscu" (dine-in) lub "na wynos" (take-out)
+    private String type;
 
     @Column(nullable = false)
-    private String status; // "W realizacji", "Gotowe", "Zrealizowane", "Anulowane"
+    // status values: W realizacji, Gotowe, Zrealizowane, Anulowane
+    private String status;
 
-    // NIE dodawaj @JsonManagedReference do items!
+    // nie dodajemy tutaj JsonManagedReference, bo powoduje zapetlone mapowanie
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "order_id")
     private List<OrderItem> items;
@@ -37,9 +36,9 @@ public class OrderEntity {
     private List<OrderStatusChange> statusHistory;
 
     @Column
-    private LocalDateTime finishedAt; // data zakończenia (status Zrealizowane)
+    // moment zakonczenia zamowienia (wykorzystywany przy statusie Zrealizowane)
+    private LocalDateTime finishedAt;
 
-    // Gettery i settery
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getOrderNumber() { return orderNumber; }

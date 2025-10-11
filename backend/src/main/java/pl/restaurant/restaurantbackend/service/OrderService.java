@@ -1,7 +1,3 @@
-// OrderService.java
-// Service for order business logic: creation, status changes, reporting.
-// Handles status change to 'Anulowane' (cancelled) without setting finishedAt.
-
 package pl.restaurant.restaurantbackend.service;
 
 import net.sf.jasperreports.engine.*;
@@ -29,7 +25,6 @@ public class OrderService {
     @Autowired
     private OrderStatusChangeRepository orderStatusChangeRepository;
 
-    // Service
     @Transactional
     public OrderEntity createOrder(OrderEntity order) {
         LocalDate today = LocalDate.now();
@@ -46,7 +41,6 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    // Report generation
     public byte[] generateOrdersReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
         InputStream reportStream = new ClassPathResource("orders_report.jrxml").getInputStream();
         JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
@@ -58,7 +52,6 @@ public class OrderService {
             JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, new JREmptyDataSource());
             return JasperExportManager.exportReportToPdf(jasperPrint);
         }
-        // Nowe liczenie czasu: zawsze licz od createdAt do finishedAt, z sekundami
         List<Map<String, Object>> data = orders.stream().map(o -> {
             Map<String, Object> m = new HashMap<>();
             m.put("orderNumber", o.getOrderNumber());
@@ -70,7 +63,6 @@ public class OrderService {
                 .collect(Collectors.joining(", ")));
             double sum = o.getItems().stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
             m.put("orderSum", String.format("%.2f zł", sum));
-            // Licz czas zawsze od createdAt do finishedAt, z sekundami
             if (o.getCreatedAt() != null && o.getFinishedAt() != null) {
                 long seconds = java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds();
                 long min = seconds / 60;
@@ -81,9 +73,7 @@ public class OrderService {
             }
             return m;
         }).collect(Collectors.toList());
-        // Całkowita suma
         double totalSum = orders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
-        // Średni czas obsługi: licz od createdAt do finishedAt dla wszystkich zamówień, które mają oba pola
         List<Long> allSeconds = orders.stream()
             .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
             .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
@@ -138,7 +128,6 @@ public class OrderService {
             }
             return m;
         }).collect(Collectors.toList());
-        // KLUCZOWE: Ustaw prawidłowe źródło danych dla JasperReports
         JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(data, false);
         double totalSum = orders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
         List<Long> allSeconds = orders.stream()
@@ -162,21 +151,16 @@ public class OrderService {
         params.put("REPORT_DATE_FROM", dateFrom);
         params.put("REPORT_DATE_TO", dateTo);
         List<Map<String, String>> stats = new ArrayList<>();
-        // Statystyka: liczba zamówień
         stats.add(Map.of("label", "Liczba zamówień", "value", String.valueOf(orders.size())));
-        // Statystyka: najczęściej kupowany produkt
         Map<String, Long> productCount = orders.stream()
                 .flatMap(o -> o.getItems().stream())
                 .collect(Collectors.groupingBy(i -> i.getName(), Collectors.summingLong(i -> i.getQuantity())));
         Optional<Map.Entry<String, Long>> topProduct = productCount.entrySet().stream().max(Map.Entry.comparingByValue());
         stats.add(Map.of("label", "Najczęściej kupowany produkt", "value", topProduct.map(Map.Entry::getKey).orElse("Brak")));
-        // Statystyka: suma wartości zamówień
         double total = orders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
         stats.add(Map.of("label", "Suma wartości zamówień", "value", String.format("%.2f zł", total)));
-        // Statystyka: średnia wartość zamówienia
         double avg = orders.isEmpty() ? 0 : total / orders.size();
         stats.add(Map.of("label", "Średnia wartość zamówienia", "value", String.format("%.2f zł", avg)));
-        // Statystyka: średni czas obsługi (createdAt -> finishedAt, z sekundami)
         List<Long> allSeconds = orders.stream()
             .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
             .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
@@ -197,7 +181,6 @@ public class OrderService {
         params.put("REPORT_TITLE", title);
         params.put("REPORT_DATE_FROM", dateFrom);
         params.put("REPORT_DATE_TO", dateTo);
-        // Filtrowanie po godzinie (jeśli przekazano)
         List<OrderEntity> filtered = orders;
         if (timeFrom != null || timeTo != null) {
             filtered = orders.stream().filter(o -> {
@@ -232,7 +215,6 @@ public class OrderService {
         return JasperExportManager.exportReportToPdf(jasperPrint);
     }
 
-    // Helpers
     @Transactional
     public void changeOrderStatus(Long orderId, String newStatus) {
         OrderEntity order = orderRepository.findById(orderId).orElseThrow();
@@ -242,7 +224,6 @@ public class OrderService {
         change.setStatus(newStatus);
         change.setChangedAt(LocalDateTime.now());
         orderStatusChangeRepository.save(change);
-        // Set finishedAt only for 'Zrealizowane', not for 'Anulowane'
         if ("Zrealizowane".equalsIgnoreCase(newStatus)) {
             order.setFinishedAt(LocalDateTime.now());
         }

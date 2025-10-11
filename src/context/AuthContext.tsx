@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: { Authorization: `Bearer ${state.token}` },
         });
       } catch {
-        // ignore network issues on logout
+        // logout is best-effort; if the call fails we still clear the local session
       }
     }
     setState(null);

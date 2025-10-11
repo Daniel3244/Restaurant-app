@@ -30,7 +30,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         if (path.startsWith("/api/orders") && !"POST".equalsIgnoreCase(method) && !"GET".equalsIgnoreCase(method)) {
-            // allow employees and managers to manage orders
+            // zmiany statusow zamowien sa dostepne dla pracownika i menedzera
             return verifyAnyRole(response, extractToken(request), new String[]{"employee", "manager"});
         }
 
@@ -75,4 +75,6 @@ public class AuthInterceptor implements HandlerInterceptor {
         return Optional.empty();
     }
 }
+
+
 
