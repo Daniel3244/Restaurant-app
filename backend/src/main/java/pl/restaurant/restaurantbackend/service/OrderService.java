@@ -1,21 +1,28 @@
 package pl.restaurant.restaurantbackend.service;
 
+import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pl.restaurant.restaurantbackend.dto.CreateOrderRequest;
+import pl.restaurant.restaurantbackend.model.MenuItem;
 import pl.restaurant.restaurantbackend.model.OrderEntity;
+import pl.restaurant.restaurantbackend.model.OrderItem;
 import pl.restaurant.restaurantbackend.model.OrderStatusChange;
+import pl.restaurant.restaurantbackend.repository.MenuItemRepository;
 import pl.restaurant.restaurantbackend.repository.OrderRepository;
 import pl.restaurant.restaurantbackend.repository.OrderStatusChangeRepository;
-
-import java.io.InputStream;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -25,8 +32,15 @@ public class OrderService {
     @Autowired
     private OrderStatusChangeRepository orderStatusChangeRepository;
 
+    @Autowired
+    private MenuItemRepository menuItemRepository;
+
     @Transactional
-    public OrderEntity createOrder(OrderEntity order) {
+    public OrderEntity createOrder(CreateOrderRequest request) {
+        if (request == null || request.items() == null || request.items().isEmpty()) {
+            throw new IllegalArgumentException("Zamowienie musi zawierac przynajmniej jedna pozycje.");
+        }
+
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.plusDays(1).atStartOfDay().minusNanos(1);
@@ -35,10 +49,43 @@ public class OrderService {
         if (lastOrderToday != null) {
             todayNumber = lastOrderToday.getOrderNumber() + 1;
         }
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (CreateOrderRequest.Item itemRequest : request.items()) {
+            if (itemRequest == null || itemRequest.menuItemId() == null) {
+                throw new IllegalArgumentException("Brak identyfikatora pozycji menu.");
+            }
+            MenuItem menuItem = menuItemRepository.findById(itemRequest.menuItemId())
+                    .orElseThrow(() -> new IllegalArgumentException("Pozycja menu nie istnieje."));
+            if (!menuItem.isActive()) {
+                throw new IllegalArgumentException("Pozycja menu jest aktualnie niedostepna.");
+            }
+            int quantity = itemRequest.quantity() != null && itemRequest.quantity() > 0 ? itemRequest.quantity() : 1;
+            OrderItem orderItem = new OrderItem();
+            orderItem.setMenuItemId(menuItem.getId());
+            orderItem.setName(menuItem.getName());
+            orderItem.setPrice(menuItem.getPrice());
+            orderItem.setQuantity(quantity);
+            orderItems.add(orderItem);
+        }
+
+        OrderEntity order = new OrderEntity();
         order.setOrderNumber(todayNumber);
         order.setCreatedAt(LocalDateTime.now());
         order.setStatus("W realizacji");
+        order.setType(normalizeOrderType(request.type()));
+        order.setItems(orderItems);
         return orderRepository.save(order);
+    }
+
+    private String normalizeOrderType(String rawType) {
+        if (rawType == null) {
+            return "na miejscu";
+        }
+        if ("na wynos".equalsIgnoreCase(rawType.trim())) {
+            return "na wynos";
+        }
+        return "na miejscu";
     }
 
     public byte[] generateOrdersReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
