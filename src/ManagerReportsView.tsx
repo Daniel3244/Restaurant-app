@@ -40,32 +40,6 @@ const formatDuration = (order: OrderPreview) => {
 };
 
 const ManagerReportsView: React.FC = () => {
-  const toServerTime = (time: string, referenceDate: Date | null): string | null => {
-    if (!time) return null;
-    const [hoursStr, minutesStr] = time.split(':');
-    const hours = Number(hoursStr);
-    const minutes = Number(minutesStr);
-    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-      return null;
-    }
-    const base = referenceDate ? new Date(referenceDate) : new Date();
-    const localDate = new Date(base.getFullYear(), base.getMonth(), base.getDate(), hours, minutes, 0, 0);
-    const utcHours = localDate.getUTCHours().toString().padStart(2, '0');
-    const utcMinutes = localDate.getUTCMinutes().toString().padStart(2, '0');
-    return `${utcHours}:${utcMinutes}`;
-  };
-
-  const formatLocalDate = (iso: string | null): string => {
-    if (!iso) return '';
-    const date = new Date(iso);
-    return date.toLocaleDateString('pl-PL');
-  };
-
-  const formatLocalTime = (iso: string | null): string => {
-    if (!iso) return '';
-    const date = new Date(iso);
-    return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', hour12: false });
-  };
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
   const [timeFrom, setTimeFrom] = useState('');
@@ -90,6 +64,43 @@ const ManagerReportsView: React.FC = () => {
     return headers;
   }, [auth.token]);
 
+  const toServerTime = (time: string): string | null => {
+    if (!time) return null;
+    const [hoursStr, minutesStr] = time.split(':');
+    if (hoursStr === undefined || minutesStr === undefined) {
+      return null;
+    }
+    const hours = Number(hoursStr);
+    const minutes = Number(minutesStr);
+    if (
+      Number.isNaN(hours) ||
+      Number.isNaN(minutes) ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes > 59
+    ) {
+      return null;
+    }
+    const reference = dateFrom ?? dateTo ?? new Date();
+    const base = new Date(reference);
+    base.setHours(hours, minutes, 0, 0);
+    const iso = base.toISOString();
+    return iso.slice(11, 16);
+  };
+
+  const formatLocalDate = (iso: string | null): string => {
+    if (!iso) return '';
+    const date = new Date(iso);
+    return date.toLocaleDateString('pl-PL');
+  };
+
+  const formatLocalTime = (iso: string | null): string => {
+    if (!iso) return '';
+    const date = new Date(iso);
+    return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', hour12: false });
+  };
+
   useEffect(() => {
     if (!dateFrom && !dateTo) {
       const today = new Date();
@@ -102,8 +113,8 @@ const ManagerReportsView: React.FC = () => {
     const params = new URLSearchParams();
     if (dateFrom) params.append('dateFrom', dateFrom.toISOString().slice(0, 10));
     if (dateTo) params.append('dateTo', dateTo.toISOString().slice(0, 10));
-    const serverTimeFrom = toServerTime(timeFrom, dateFrom ?? dateTo);
-    const serverTimeTo = toServerTime(timeTo, dateTo ?? dateFrom);
+    const serverTimeFrom = toServerTime(timeFrom);
+    const serverTimeTo = toServerTime(timeTo);
     if (serverTimeFrom) params.append('timeFrom', serverTimeFrom);
     if (serverTimeTo) params.append('timeTo', serverTimeTo);
     params.append('type', type);
@@ -147,8 +158,8 @@ const ManagerReportsView: React.FC = () => {
       if (dateTo) params.append('dateTo', dateTo.toISOString().slice(0, 10));
       if (statusFilter) params.append('status', statusFilter);
       if (typeFilter) params.append('type', typeFilter);
-      const serverTimeFrom = toServerTime(timeFrom, dateFrom ?? dateTo);
-      const serverTimeTo = toServerTime(timeTo, dateTo ?? dateFrom);
+      const serverTimeFrom = toServerTime(timeFrom);
+      const serverTimeTo = toServerTime(timeTo);
       if (serverTimeFrom) params.append('timeFrom', serverTimeFrom);
       if (serverTimeTo) params.append('timeTo', serverTimeTo);
       params.append('page', '0');

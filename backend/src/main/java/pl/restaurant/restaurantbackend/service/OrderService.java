@@ -1,6 +1,9 @@
 package pl.restaurant.restaurantbackend.service;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,8 +24,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.DigestUtils;
 import pl.restaurant.restaurantbackend.dto.CreateOrderRequest;
 import pl.restaurant.restaurantbackend.dto.OrderSearchCriteria;
+import pl.restaurant.restaurantbackend.dto.PublicOrderView;
 import pl.restaurant.restaurantbackend.model.DailyOrderCounter;
 import pl.restaurant.restaurantbackend.model.MenuItem;
 import pl.restaurant.restaurantbackend.model.OrderEntity;
@@ -36,6 +41,9 @@ import pl.restaurant.restaurantbackend.repository.specification.OrderSpecificati
 
 @Service
 public class OrderService {
+    private static final List<String> SCREEN_ORDER_STATUSES = List.of("W realizacji", "Gotowe");
+    private static final Duration ACTIVE_ORDERS_CACHE_TTL = Duration.ofSeconds(2);
+
     @Autowired
     private OrderRepository orderRepository;
 
@@ -47,6 +55,9 @@ public class OrderService {
 
     @Autowired
     private DailyOrderCounterRepository dailyOrderCounterRepository;
+
+    private final Object activeOrdersCacheLock = new Object();
+    private volatile ActiveOrdersCache activeOrdersCache = ActiveOrdersCache.empty();
 
     @Transactional
     public OrderEntity createOrder(CreateOrderRequest request) {
@@ -86,7 +97,9 @@ public class OrderService {
         order.setStatus("W realizacji");
         order.setType(normalizeOrderType(request.type()));
         order.setItems(orderItems);
-        return orderRepository.save(order);
+        OrderEntity saved = orderRepository.save(order);
+        invalidateActiveOrdersCache();
+        return saved;
     }
 
     public Page<OrderEntity> findOrders(OrderSearchCriteria criteria, Pageable pageable) {
@@ -376,5 +389,69 @@ public class OrderService {
             order.setFinishedAt(null);
         }
         orderRepository.save(order);
+        invalidateActiveOrdersCache();
     }
+
+    public ActiveOrdersSnapshot getActiveOrdersSnapshot() {
+        ActiveOrdersCache snapshot = activeOrdersCache;
+        if (snapshot.isFresh()) {
+            return snapshot.toSnapshot();
+        }
+        synchronized (activeOrdersCacheLock) {
+            snapshot = activeOrdersCache;
+            if (snapshot.isFresh()) {
+                return snapshot.toSnapshot();
+            }
+            List<OrderEntity> activeOrders = orderRepository.findByOrderDateAndStatusIn(
+                    LocalDate.now(),
+                    SCREEN_ORDER_STATUSES,
+                    Sort.by(Sort.Direction.ASC, "orderNumber")
+            );
+            List<PublicOrderView> view = activeOrders.stream()
+                    .map(o -> new PublicOrderView(o.getId(), o.getOrderNumber(), o.getStatus()))
+                    .collect(Collectors.toList());
+            String etag = computeOrdersEtag(activeOrders);
+            ActiveOrdersCache refreshed = new ActiveOrdersCache(view, etag, Instant.now());
+            activeOrdersCache = refreshed;
+            return refreshed.toSnapshot();
+        }
+    }
+
+    private void invalidateActiveOrdersCache() {
+        activeOrdersCache = ActiveOrdersCache.stale();
+    }
+
+    private String computeOrdersEtag(List<OrderEntity> orders) {
+        if (orders.isEmpty()) {
+            return "\"empty\"";
+        }
+        String payload = orders.stream()
+                .map(o -> o.getId() + "|" + o.getOrderNumber() + "|" + o.getStatus() + "|" +
+                        (o.getFinishedAt() != null ? o.getFinishedAt().toString() : "") + "|" +
+                        (o.getCreatedAt() != null ? o.getCreatedAt().toString() : ""))
+                .collect(Collectors.joining(";"));
+        String digest = DigestUtils.md5DigestAsHex(payload.getBytes(StandardCharsets.UTF_8));
+        return "\"" + digest + "\"";
+    }
+
+    private record ActiveOrdersCache(List<PublicOrderView> orders, String etag, Instant fetchedAt) {
+        boolean isFresh() {
+            return fetchedAt != null
+                    && Instant.now().isBefore(fetchedAt.plus(ACTIVE_ORDERS_CACHE_TTL));
+        }
+
+        ActiveOrdersSnapshot toSnapshot() {
+            return new ActiveOrdersSnapshot(orders, etag);
+        }
+
+        static ActiveOrdersCache empty() {
+            return new ActiveOrdersCache(List.of(), "\"empty\"", Instant.EPOCH);
+        }
+
+        static ActiveOrdersCache stale() {
+            return new ActiveOrdersCache(List.of(), "\"stale\"", Instant.EPOCH);
+        }
+    }
+
+    public record ActiveOrdersSnapshot(List<PublicOrderView> orders, String etag) {}
 }

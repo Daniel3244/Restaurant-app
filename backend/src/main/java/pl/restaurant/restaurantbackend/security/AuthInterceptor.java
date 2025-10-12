@@ -25,8 +25,16 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
+        if (path.startsWith("/api/public/")) {
+            return true;
+        }
+
         if (path.startsWith("/api/manager")) {
             return verifyRole(response, extractToken(request), "manager");
+        }
+
+        if (path.startsWith("/api/orders") && "GET".equalsIgnoreCase(method)) {
+            return verifyAnyRole(response, extractToken(request), new String[]{"employee", "manager"});
         }
 
         if (path.startsWith("/api/orders") && !"POST".equalsIgnoreCase(method) && !"GET".equalsIgnoreCase(method)) {

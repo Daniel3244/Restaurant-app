@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
 
@@ -15,18 +15,32 @@ function OrderNumbersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const etagRef = useRef<string | null>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/orders`);
+      const headers: HeadersInit = {};
+      if (etagRef.current) {
+        headers['If-None-Match'] = etagRef.current;
+      }
+      const res = await fetch(`${API_BASE_URL}/api/public/orders/active`, { headers });
+      if (res.status === 304) {
+        setLoading(false);
+        return;
+      }
       if (!res.ok) throw new Error('Blad pobierania zamowien');
-      const data = await res.json();
+      const data = await res.json() as Order[];
       setOrders(Array.isArray(data) ? data.filter((o: Order) => STATUS_DISPLAY.includes(o.status as any)) : []);
+      const incomingEtag = res.headers.get('ETag');
+      if (incomingEtag) {
+        etagRef.current = incomingEtag;
+      }
     } catch (e: any) {
       setError(e?.message ?? 'Wystapil blad');
       setOrders([]);
+      etagRef.current = null;
     } finally {
       setLoading(false);
     }

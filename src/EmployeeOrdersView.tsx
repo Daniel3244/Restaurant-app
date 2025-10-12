@@ -19,6 +19,16 @@ type OrderRecord = {
   items: { id: number; name: string; quantity: number; price: number }[];
 };
 
+type OrdersResponse = {
+  orders: OrderRecord[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+};
+
+const DEFAULT_PAGE_SIZE = 100;
+
 function EmployeeOrdersView() {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +36,9 @@ function EmployeeOrdersView() {
   const [updating, setUpdating] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["key"]>("todo");
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
   const auth = useAuth();
 
   const authHeaders = useMemo(() => {
@@ -36,35 +49,49 @@ function EmployeeOrdersView() {
     return headers;
   }, [auth.token]);
 
-  const fetchOrders = useCallback(async ({ showSpinner = false }: { showSpinner?: boolean } = {}) => {
-      const shouldShowSpinner = showSpinner || !hasLoaded;
-      if (shouldShowSpinner) {
-        setLoading(true);
-        setError(null);
-      }
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/orders`, { headers: authHeaders });
-        if (!res.ok) throw new Error("Blad pobierania zamowien");
-        const data = (await res.json()) as OrderRecord[];
-        setOrders(data.sort((a, b) => b.orderNumber - a.orderNumber));
+  const fetchOrders = useCallback(async ({ showSpinner = false, targetPage }: { showSpinner?: boolean; targetPage?: number } = {}) => {
+    const pageToLoad = typeof targetPage === "number" ? Math.max(targetPage, 0) : page;
+    const shouldShowSpinner = showSpinner || !hasLoaded;
+    if (shouldShowSpinner) {
+      setLoading(true);
+      setError(null);
+    }
+    try {
+      const params = new URLSearchParams();
+      params.append("page", String(pageToLoad));
+      params.append("size", String(DEFAULT_PAGE_SIZE));
+      params.append("todayOnly", "true");
+      const res = await fetch(`${API_BASE_URL}/api/orders?${params.toString()}`, { headers: authHeaders });
+      if (res.status === 304) {
         setHasLoaded(true);
-        setError(null);
-      } catch (e: any) {
-        setError(e?.message ?? "Nieznany blad");
-      } finally {
-        if (shouldShowSpinner) {
-          setLoading(false);
-        }
+        return;
       }
-  }, [authHeaders, hasLoaded]);
+      if (!res.ok) throw new Error("Blad pobierania zamowien");
+      const payload = (await res.json()) as OrdersResponse;
+      const fetchedOrders = payload.orders ?? [];
+      setOrders(fetchedOrders.sort((a, b) => b.orderNumber - a.orderNumber));
+      setTotalElements(payload.totalElements ?? fetchedOrders.length);
+      setTotalPages(Math.max(payload.totalPages ?? 1, 1));
+      const payloadPage = typeof payload.page === "number" ? payload.page : pageToLoad;
+      setPage(prev => (prev === payloadPage ? prev : payloadPage));
+      setHasLoaded(true);
+      setError(null);
+    } catch (e: any) {
+      setError(e?.message ?? "Nieznany blad");
+    } finally {
+      if (shouldShowSpinner) {
+        setLoading(false);
+      }
+    }
+  }, [authHeaders, hasLoaded, page]);
 
   useEffect(() => {
-    fetchOrders({ showSpinner: true });
+    fetchOrders({ showSpinner: true, targetPage: page });
     const interval = window.setInterval(() => {
-      fetchOrders();
+      fetchOrders({ targetPage: page });
     }, 10000);
     return () => window.clearInterval(interval);
-  }, [fetchOrders]);
+  }, [fetchOrders, page]);
 
   const nextStatus = (status: typeof STATUS_FLOW[number]) => {
     const idx = STATUS_FLOW.indexOf(status);
@@ -81,7 +108,7 @@ function EmployeeOrdersView() {
         headers: { ...authHeaders, "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      fetchOrders();
+      fetchOrders({ targetPage: page });
     } finally {
       setUpdating(null);
     }
@@ -96,15 +123,13 @@ function EmployeeOrdersView() {
         headers: { ...authHeaders, "Content-Type": "application/json" },
         body: JSON.stringify({ status: "Anulowane" }),
       });
-      fetchOrders();
+      fetchOrders({ targetPage: page });
     } finally {
       setUpdating(null);
     }
   };
 
-  const todayStamp = new Date().toISOString().slice(0, 10);
-  const todayOrders = orders.filter(order => order.createdAt?.slice(0, 10) === todayStamp);
-  const filteredOrders = todayOrders.filter(order => {
+  const filteredOrders = orders.filter(order => {
     const tab = TABS.find(t => t.key === activeTab);
     if (!tab) return true;
     const statuses: readonly typeof STATUS_FLOW[number][] = tab.statuses;
@@ -114,21 +139,38 @@ function EmployeeOrdersView() {
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const tab of TABS) {
-      counts[tab.key] = todayOrders.filter(order => (tab.statuses as readonly typeof STATUS_FLOW[number][]).includes(order.status)).length;
+      counts[tab.key] = orders.filter(order => (tab.statuses as readonly typeof STATUS_FLOW[number][]).includes(order.status)).length;
     }
     return counts;
-  }, [todayOrders]);
+  }, [orders]);
+
+  const canGoPrev = page > 0;
+  const canGoNext = page + 1 < totalPages;
+  const pageLabel = totalPages > 0 ? page + 1 : 0;
 
   return (
     <div className="manager-view">
       <div className="manager-view-header manager-view-header--wrap">
         <div>
           <h2>Panel pracownika - Zamowienia</h2>
+          <span className="manager-refresh-info">Widoczne: {filteredOrders.length} / {totalElements}</span>
         </div>
         <div className="manager-nav-actions">
           <a href="/" className="manager-nav-back">&larr; Powrot do strony glownej</a>
           <button className="manager-logout-btn" onClick={auth.logout}>Wyloguj</button>
         </div>
+      </div>
+      <div className="manager-pagination" style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}>
+        <button className="manager-cancel-btn" onClick={() => setPage(prev => Math.max(prev - 1, 0))} disabled={!canGoPrev}>
+          &larr; Poprzednia
+        </button>
+        <span>Strona {pageLabel} z {totalPages}</span>
+        <button className="manager-save-btn" onClick={() => setPage(prev => Math.min(prev + 1, Math.max(totalPages - 1, 0)))} disabled={!canGoNext}>
+          Nastepna &rarr;
+        </button>
+        <button className="manager-save-btn" onClick={() => fetchOrders({ showSpinner: true, targetPage: page })}>
+          Odswiez
+        </button>
       </div>
       <div className="employee-tabs">
         {TABS.map(tab => (
