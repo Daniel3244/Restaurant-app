@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 
 type Role = 'manager' | 'employee';
@@ -19,6 +20,7 @@ type AuthContextValue = {
 };
 
 const STORAGE_KEY = 'restaurant-auth';
+const SESSION_EXPIRED_MESSAGE = 'Sesja wygasła. Zaloguj się ponownie.';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -37,8 +39,35 @@ function loadInitialState(): AuthState | null {
   }
 }
 
+function hasAuthorizationHeader(headers?: HeadersInit): boolean {
+  if (!headers) return false;
+  if (headers instanceof Headers) {
+    return headers.has('Authorization') || headers.has('authorization');
+  }
+  if (Array.isArray(headers)) {
+    return headers.some(([key]) => key.toLowerCase() === 'authorization');
+  }
+  const record = headers as Record<string, unknown>;
+  return Object.keys(record).some((key) => key.toLowerCase() === 'authorization');
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState | null>(loadInitialState);
+  const navigate = useNavigate();
+  const autoLogoutRef = useRef(false);
+  const originalFetchRef = useRef<typeof fetch | null>(null);
+
+  const handleAutoLogout = useCallback((message: string = SESSION_EXPIRED_MESSAGE) => {
+    if (autoLogoutRef.current) return;
+    autoLogoutRef.current = true;
+    setState(null);
+    window.alert(message);
+    navigate('/login', { replace: true });
+    // allow future alerts after navigation completes
+    setTimeout(() => {
+      autoLogoutRef.current = false;
+    }, 0);
+  }, [navigate]);
 
   useEffect(() => {
     if (state) {
@@ -59,6 +88,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, state.expiresAt - Date.now());
     return () => window.clearTimeout(timeout);
   }, [state]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!originalFetchRef.current) {
+      originalFetchRef.current = window.fetch.bind(window);
+    }
+    const originalFetch = originalFetchRef.current;
+    if (!originalFetch) {
+      return;
+    }
+
+    const wrappedFetch: typeof fetch = async (input, init) => {
+      const response = await originalFetch(input as RequestInfo | URL, init as RequestInit | undefined);
+      const token = state?.token;
+      if ((response.status === 401 || response.status === 403) && token) {
+        const initHasAuth = hasAuthorizationHeader(init?.headers);
+        const requestHasAuth = input instanceof Request ? hasAuthorizationHeader(input.headers) : false;
+        if (initHasAuth || requestHasAuth) {
+          handleAutoLogout();
+        }
+      }
+      return response;
+    };
+
+    window.fetch = wrappedFetch;
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, [state?.token, handleAutoLogout]);
 
   const login = useCallback(async (username: string, password: string) => {
     const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
