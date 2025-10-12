@@ -306,6 +306,8 @@ public class OrderService {
         orderStatusChangeRepository.save(change);
         if ("Zrealizowane".equalsIgnoreCase(newStatus)) {
             order.setFinishedAt(LocalDateTime.now());
+        } else {
+            order.setFinishedAt(null);
         }
         orderRepository.save(order);
     }
