@@ -24,6 +24,12 @@ const CATEGORIES = [
   { id: 'dodatki', name: 'Dodatki' },
 ];
 
+type UploadResponse = {
+  url?: string;
+  originalName?: string;
+  error?: string;
+};
+
 const ManagerMenuView: React.FC = () => {
   const [menu, setMenu] = useState<MenuItem[]>([]);
   const [form, setForm] = useState<Omit<MenuItem, 'imageUrl'> & { imageFile: File | null }>({
@@ -109,20 +115,28 @@ const ManagerMenuView: React.FC = () => {
       setUploading(true);
       const data = new FormData();
       data.append('file', form.imageFile);
-      const res = await fetch(UPLOAD_URL, {
-        method: 'POST',
-        body: data,
-        headers: authHeaders,
-      });
-      if (res.ok) {
-        imageUrl = await res.text();
-      } else {
-        setUploading(false);
-        setError('Blad uploadu pliku: ' + (await res.text()));
+      try {
+        const res = await fetch(UPLOAD_URL, {
+          method: 'POST',
+          body: data,
+          headers: authHeaders,
+        });
+        const payload = await res.json().catch(() => null) as UploadResponse | null;
+        if (!res.ok || !payload?.url) {
+          const message = payload?.error ?? (res.status === 415 ? 'Niepoprawny typ pliku' : 'Nie udalo sie zapisac obrazka.');
+          setError('Blad uploadu pliku: ' + message);
+          setFeedback({ type: 'error', message });
+          return;
+        }
+        imageUrl = payload.url;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Nieznany blad';
+        setError('Blad uploadu pliku: ' + message);
         setFeedback({ type: 'error', message: 'Nie udalo sie zapisac obrazka.' });
         return;
+      } finally {
+        setUploading(false);
       }
-      setUploading(false);
     }
 
     const payload = {
