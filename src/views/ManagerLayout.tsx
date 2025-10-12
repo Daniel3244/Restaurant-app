@@ -18,7 +18,7 @@ function ManagerLayout() {
             <small>{auth.role ? `Rola: ${auth.role}` : 'Brak roli'}</small>
           </div>
           <div className="manager-nav-actions">
-            <Link to="/" className="manager-nav-back">← Powrot</Link>
+            <Link to="/" className="manager-nav-back">← Powrót</Link>
             <button className="manager-logout-btn" onClick={handleLogout}>Wyloguj</button>
           </div>
         </div>

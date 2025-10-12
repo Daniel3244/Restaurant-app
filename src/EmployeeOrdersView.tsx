@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { API_BASE_URL } from "./config";
 import { useAuth } from "./context/AuthContext";
@@ -25,6 +25,7 @@ function EmployeeOrdersView() {
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["key"]>("todo");
+  const [hasLoaded, setHasLoaded] = useState(false);
   const auth = useAuth();
 
   const authHeaders = useMemo(() => {
@@ -35,26 +36,35 @@ function EmployeeOrdersView() {
     return headers;
   }, [auth.token]);
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/orders`, { headers: authHeaders });
-      if (!res.ok) throw new Error("Blad pobierania zamowien");
-      const data = (await res.json()) as OrderRecord[];
-      setOrders(data.sort((a, b) => b.orderNumber - a.orderNumber));
-    } catch (e: any) {
-      setError(e?.message ?? "Nieznany blad");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchOrders = useCallback(async ({ showSpinner = false }: { showSpinner?: boolean } = {}) => {
+      const shouldShowSpinner = showSpinner || !hasLoaded;
+      if (shouldShowSpinner) {
+        setLoading(true);
+        setError(null);
+      }
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/orders`, { headers: authHeaders });
+        if (!res.ok) throw new Error("Blad pobierania zamowien");
+        const data = (await res.json()) as OrderRecord[];
+        setOrders(data.sort((a, b) => b.orderNumber - a.orderNumber));
+        setHasLoaded(true);
+        setError(null);
+      } catch (e: any) {
+        setError(e?.message ?? "Nieznany blad");
+      } finally {
+        if (shouldShowSpinner) {
+          setLoading(false);
+        }
+      }
+  }, [authHeaders, hasLoaded]);
 
   useEffect(() => {
-    fetchOrders();
-    const interval = window.setInterval(fetchOrders, 10000);
+    fetchOrders({ showSpinner: true });
+    const interval = window.setInterval(() => {
+      fetchOrders();
+    }, 10000);
     return () => window.clearInterval(interval);
-  }, [authHeaders]);
+  }, [fetchOrders]);
 
   const nextStatus = (status: typeof STATUS_FLOW[number]) => {
     const idx = STATUS_FLOW.indexOf(status);

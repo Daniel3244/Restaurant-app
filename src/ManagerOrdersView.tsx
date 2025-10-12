@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
 import { useAuth } from './context/AuthContext';
@@ -28,7 +28,10 @@ const ManagerOrdersView: React.FC = () => {
     type: ''
   });
   const [lastRefresh, setLastRefresh] = useState<number | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const auth = useAuth();
+  const filtersRef = useRef(filters);
+  const filtersReadyForSync = useRef(false);
 
   const authHeaders = useMemo(() => {
     const headers: Record<string, string> = {};
@@ -38,17 +41,25 @@ const ManagerOrdersView: React.FC = () => {
     return headers;
   }, [auth.token]);
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  const fetchOrders = useCallback(async ({ showSpinner = false }: { showSpinner?: boolean } = {}) => {
+    const currentFilters = filtersRef.current;
+    const shouldShowSpinner = showSpinner || !hasLoaded;
+    if (shouldShowSpinner) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const params = new URLSearchParams();
-      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
-      if (filters.dateTo) params.append('dateTo', filters.dateTo);
-      if (filters.timeFrom) params.append('timeFrom', filters.timeFrom);
-      if (filters.timeTo) params.append('timeTo', filters.timeTo);
-      if (filters.status) params.append('status', filters.status);
-      if (filters.type) params.append('type', filters.type);
+      if (currentFilters.dateFrom) params.append('dateFrom', currentFilters.dateFrom);
+      if (currentFilters.dateTo) params.append('dateTo', currentFilters.dateTo);
+      if (currentFilters.timeFrom) params.append('timeFrom', currentFilters.timeFrom);
+      if (currentFilters.timeTo) params.append('timeTo', currentFilters.timeTo);
+      if (currentFilters.status) params.append('status', currentFilters.status);
+      if (currentFilters.type) params.append('type', currentFilters.type);
 
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, {
         headers: authHeaders,
@@ -57,18 +68,35 @@ const ManagerOrdersView: React.FC = () => {
       const data = (await res.json()) as OrderRecord[];
       setOrders(data.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()));
       setLastRefresh(Date.now());
+      setHasLoaded(true);
+      setError(null);
     } catch (e: any) {
       setError(e?.message ?? 'Nieznany blad');
     } finally {
-      setLoading(false);
+      if (shouldShowSpinner) {
+        setLoading(false);
+      }
     }
-  };
+  }, [authHeaders, hasLoaded]);
 
   useEffect(() => {
-    fetchOrders();
-    const interval = window.setInterval(fetchOrders, 15000);
+    fetchOrders({ showSpinner: true });
+    const interval = window.setInterval(() => {
+      fetchOrders();
+    }, 15000);
     return () => window.clearInterval(interval);
-  }, [filters, authHeaders]);
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    if (!hasLoaded) {
+      return;
+    }
+    if (!filtersReadyForSync.current) {
+      filtersReadyForSync.current = true;
+      return;
+    }
+    fetchOrders();
+  }, [filters, fetchOrders, hasLoaded]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -90,7 +118,10 @@ const ManagerOrdersView: React.FC = () => {
   });
 
   const resetFilters = () => {
-    setFilters({ dateFrom: '', dateTo: '', timeFrom: '', timeTo: '', status: '', type: '' });
+    const cleared = { dateFrom: '', dateTo: '', timeFrom: '', timeTo: '', status: '', type: '' };
+    filtersRef.current = cleared;
+    setFilters(cleared);
+    fetchOrders({ showSpinner: true });
   };
 
   const totalSum = filteredOrders.reduce((sum, order) => {
@@ -112,7 +143,7 @@ const ManagerOrdersView: React.FC = () => {
           <h2>Przeglad zamowien</h2>
           <span className="manager-refresh-info">Odswiezono: {formattedRefresh}</span>
         </div>
-        <a href="/" className="manager-nav-back">&larr; Powrot do strony glownej</a>
+        <a href="/" className="manager-nav-back">&larr; Powrót do strony głównej</a>
       </div>
 
       <div className="manager-summary-grid compact">
@@ -166,11 +197,11 @@ const ManagerOrdersView: React.FC = () => {
           </select>
         </label>
         <div style={{ display: 'inline-flex', gap: 8, marginLeft: 16 }}>
-          <button className="manager-save-btn" onClick={fetchOrders}>Filtruj</button>
+          <button className="manager-save-btn" onClick={() => fetchOrders({ showSpinner: true })}>Filtruj</button>
           <button type="button" className="manager-cancel-btn" onClick={resetFilters}>
             Resetuj filtry
           </button>
-          <button className="manager-save-btn" onClick={fetchOrders}>Odswiez</button>
+          <button className="manager-save-btn" onClick={() => fetchOrders({ showSpinner: true })}>Odswiez</button>
         </div>
       </div>
       {loading ? (
