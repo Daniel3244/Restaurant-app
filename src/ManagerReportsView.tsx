@@ -72,21 +72,22 @@ const ManagerReportsView: React.FC = () => {
     }
   }, [dateFrom, dateTo]);
 
-  const buildParams = (type: 'orders' | 'stats') => {
+  const buildParams = (type: 'orders' | 'stats', format: 'pdf' | 'csv') => {
     const params = new URLSearchParams();
     if (dateFrom) params.append('dateFrom', dateFrom.toISOString().slice(0, 10));
     if (dateTo) params.append('dateTo', dateTo.toISOString().slice(0, 10));
     if (timeFrom) params.append('timeFrom', timeFrom);
     if (timeTo) params.append('timeTo', timeTo);
     params.append('type', type);
+    params.append('format', format);
     return params;
   };
 
-  const downloadReport = async (reportType: 'orders' | 'stats') => {
+  const downloadReport = async (reportType: 'orders' | 'stats', format: 'pdf' | 'csv' = 'pdf') => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/manager/orders/report?${buildParams(reportType).toString()}`, {
+      const res = await fetch(`${API_BASE_URL}/api/manager/orders/report?${buildParams(reportType, format).toString()}`, {
         headers: authHeaders,
       });
       if (!res.ok) throw new Error('Blad pobierania raportu');
@@ -94,7 +95,10 @@ const ManagerReportsView: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = reportType === 'orders' ? 'raport_zamowien.pdf' : 'raport_statystyk.pdf';
+      const filename = format === 'csv'
+        ? (reportType === 'orders' ? 'raport_zamowien.csv' : 'raport_statystyk.csv')
+        : (reportType === 'orders' ? 'raport_zamowien.pdf' : 'raport_statystyk.pdf');
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -235,12 +239,34 @@ const ManagerReportsView: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ marginTop: 24, display: 'flex', gap: 16 }}>
-        <button className="manager-save-btn" disabled={loading} onClick={() => downloadReport('orders')}>
-          Pobierz raport zamowien
+      <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+        <button
+          className="manager-save-btn"
+          disabled={loading}
+          onClick={() => downloadReport('orders', 'pdf')}
+        >
+          Pobierz raport zamowien (PDF)
         </button>
-        <button className="manager-save-btn" disabled={loading} onClick={() => downloadReport('stats')}>
-          Pobierz raport statystyk
+        <button
+          className="manager-save-btn"
+          disabled={loading}
+          onClick={() => downloadReport('orders', 'csv')}
+        >
+          Pobierz raport zamowien (CSV)
+        </button>
+        <button
+          className="manager-save-btn"
+          disabled={loading}
+          onClick={() => downloadReport('stats', 'pdf')}
+        >
+          Pobierz raport statystyk (PDF)
+        </button>
+        <button
+          className="manager-save-btn"
+          disabled={loading}
+          onClick={() => downloadReport('stats', 'csv')}
+        >
+          Pobierz raport statystyk (CSV)
         </button>
         {error && <span className="manager-error" style={{ alignSelf: 'center' }}>{error}</span>}
       </div>

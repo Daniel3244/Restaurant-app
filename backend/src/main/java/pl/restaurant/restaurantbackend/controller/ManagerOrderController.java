@@ -65,22 +65,35 @@ public class ManagerOrderController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(required = false) String timeFrom,
             @RequestParam(required = false) String timeTo,
-            @RequestParam(defaultValue = "orders") String reportType
+            @RequestParam(defaultValue = "orders") String reportType,
+            @RequestParam(defaultValue = "pdf") String format
     ) throws Exception {
         OrderSearchCriteria criteria = toCriteria(dateFrom, dateTo, timeFrom, timeTo, null, null);
         List<OrderEntity> filtered = orderService.findOrders(criteria);
 
-        String title = "stats".equalsIgnoreCase(reportType)
-                ? "Statystyki zamówień"
-                : "Raport zamówień";
+        boolean stats = "stats".equalsIgnoreCase(reportType);
+        boolean csv = "csv".equalsIgnoreCase(format);
         String dateFromStr = dateFrom != null ? dateFrom.toString() : "";
         String dateToStr = dateTo != null ? dateTo.toString() : "";
 
-        byte[] pdf = "stats".equalsIgnoreCase(reportType)
+        if (csv) {
+            String filename = stats ? "statystyki.csv" : "zamowienia.csv";
+            String csvContent = stats
+                    ? orderService.generateStatsCsv(filtered, dateFromStr, dateToStr, timeFrom, timeTo)
+                    : orderService.generateOrdersCsv(filtered, dateFromStr, dateToStr, timeFrom, timeTo);
+            byte[] data = csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            MediaType csvType = new MediaType("text", "csv", java.nio.charset.StandardCharsets.UTF_8);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                    .contentType(csvType)
+                    .body(data);
+        }
+
+        String title = stats ? "Statystyki zamówień" : "Raport zamówień";
+        byte[] pdf = stats
                 ? orderService.generateStatsReport(filtered, title, dateFromStr, dateToStr, timeFrom, timeTo)
                 : orderService.generateOrdersReport(filtered, title, dateFromStr, dateToStr, timeFrom, timeTo);
-
-        String filename = "stats".equalsIgnoreCase(reportType) ? "statystyki.pdf" : "zamowienia.pdf";
+        String filename = stats ? "statystyki.pdf" : "zamowienia.pdf";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
                 .contentType(MediaType.APPLICATION_PDF)

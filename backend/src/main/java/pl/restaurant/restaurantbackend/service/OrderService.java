@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -293,6 +294,71 @@ public class OrderService {
         JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(stats);
         JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, ds);
         return JasperExportManager.exportReportToPdf(jasperPrint);
+    }
+
+    public String generateOrdersCsv(List<OrderEntity> orders, String dateFrom, String dateTo, String timeFrom, String timeTo) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("order_number,created_date,created_time,type,status,total_value,items\n");
+        for (OrderEntity order : orders) {
+            String createdDate = order.getCreatedAt() != null ? order.getCreatedAt().toLocalDate().toString() : "";
+            String createdTime = order.getCreatedAt() != null ? order.getCreatedAt().toLocalTime().toString().substring(0, 5) : "";
+            double total = order.getItems().stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
+            String items = order.getItems().stream()
+                    .map(i -> i.getName() + " x " + i.getQuantity() + " (" + formatMoney(i.getPrice()) + ")")
+                    .collect(Collectors.joining(" | "));
+            sb.append(valueOrEmpty(order.getOrderNumber()))
+                    .append(',').append(escapeCsv(createdDate))
+                    .append(',').append(escapeCsv(createdTime))
+                    .append(',').append(escapeCsv(order.getType()))
+                    .append(',').append(escapeCsv(order.getStatus()))
+                    .append(',').append(escapeCsv(formatMoney(total)))
+                    .append(',').append(escapeCsv(items))
+                    .append('\n');
+        }
+        return sb.toString();
+    }
+
+    public String generateStatsCsv(List<OrderEntity> orders, String dateFrom, String dateTo, String timeFrom, String timeTo) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("metric,value\n");
+        sb.append("Liczba zamowien,").append(orders.size()).append('\n');
+        Map<String, Long> productCount = orders.stream()
+                .flatMap(o -> o.getItems().stream())
+                .collect(Collectors.groupingBy(OrderItem::getName, Collectors.summingLong(OrderItem::getQuantity)));
+        Optional<Map.Entry<String, Long>> topProduct = productCount.entrySet().stream().max(Map.Entry.comparingByValue());
+        sb.append("Najczesciej kupowany produkt,").append(escapeCsv(topProduct.map(Map.Entry::getKey).orElse("Brak"))).append('\n');
+        double total = orders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
+        sb.append("Suma wartosci zamowien,").append(formatMoney(total)).append('\n');
+        double avg = orders.isEmpty() ? 0 : total / orders.size();
+        sb.append("Srednia wartosc zamowienia,").append(formatMoney(avg)).append('\n');
+        List<Long> durations = orders.stream()
+                .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
+                .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
+                .collect(Collectors.toList());
+        double avgSec = durations.isEmpty() ? 0 : durations.stream().mapToLong(Long::longValue).average().orElse(0);
+        long avgMin = (long) (avgSec / 60);
+        long avgRemSec = (long) (avgSec % 60);
+        sb.append("Sredni czas obslugi,").append(durations.isEmpty() ? "-" : String.format("%d min %02d s", avgMin, avgRemSec)).append('\n');
+        return sb.toString();
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        String escaped = value.replace("\"", "\"\"");
+        if (escaped.contains(",") || escaped.contains("\n") || escaped.contains("\r")) {
+            return "\"" + escaped + "\"";
+        }
+        return escaped;
+    }
+
+    private String valueOrEmpty(Long number) {
+        return number == null ? "" : number.toString();
+    }
+
+    private String formatMoney(double value) {
+        return String.format(Locale.US, "%.2f", value);
     }
 
     @Transactional
