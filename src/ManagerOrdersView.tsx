@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
 import { useAuth } from './context/AuthContext';
@@ -39,10 +39,10 @@ const ManagerOrdersView: React.FC = () => {
   });
   const [lastRefresh, setLastRefresh] = useState<number | null>(null);
   const [totalAvailable, setTotalAvailable] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(0);
   const [hasLoaded, setHasLoaded] = useState(false);
   const auth = useAuth();
-  const filtersRef = useRef(filters);
-  const filtersReadyForSync = useRef(false);
 
   const authHeaders = useMemo(() => {
     const headers: Record<string, string> = {};
@@ -52,12 +52,8 @@ const ManagerOrdersView: React.FC = () => {
     return headers;
   }, [auth.token]);
 
-  useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
-
-  const fetchOrders = useCallback(async ({ showSpinner = false }: { showSpinner?: boolean } = {}) => {
-    const currentFilters = filtersRef.current;
+  const fetchOrders = useCallback(async ({ showSpinner = false, targetPage }: { showSpinner?: boolean; targetPage?: number } = {}) => {
+    const pageToLoad = typeof targetPage === 'number' ? Math.max(targetPage, 0) : page;
     const shouldShowSpinner = showSpinner || !hasLoaded;
     if (shouldShowSpinner) {
       setLoading(true);
@@ -65,23 +61,27 @@ const ManagerOrdersView: React.FC = () => {
     }
     try {
       const params = new URLSearchParams();
-      if (currentFilters.dateFrom) params.append('dateFrom', currentFilters.dateFrom);
-      if (currentFilters.dateTo) params.append('dateTo', currentFilters.dateTo);
-      if (currentFilters.timeFrom) params.append('timeFrom', currentFilters.timeFrom);
-      if (currentFilters.timeTo) params.append('timeTo', currentFilters.timeTo);
-      if (currentFilters.status) params.append('status', currentFilters.status);
-      if (currentFilters.type) params.append('type', currentFilters.type);
-      params.append('page', '0');
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.append('dateTo', filters.dateTo);
+      if (filters.timeFrom) params.append('timeFrom', filters.timeFrom);
+      if (filters.timeTo) params.append('timeTo', filters.timeTo);
+      if (filters.status) params.append('status', filters.status);
+      if (filters.type) params.append('type', filters.type);
+      params.append('page', String(pageToLoad));
       params.append('size', String(PAGE_SIZE));
 
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, {
         headers: authHeaders,
       });
       if (!res.ok) throw new Error('Blad pobierania zamowien');
-      const payload = (await res.json()) as OrdersResponse;
+      const payload = await res.json() as OrdersResponse;
       const fetchedOrders = payload.orders ?? [];
       setOrders(fetchedOrders);
       setTotalAvailable(payload.totalElements ?? fetchedOrders.length);
+      setTotalPages(Math.max(payload.totalPages ?? 1, 1));
+      if (typeof payload.page === 'number' && payload.page !== page) {
+        setPage(payload.page);
+      }
       setLastRefresh(Date.now());
       setHasLoaded(true);
       setError(null);
@@ -92,30 +92,23 @@ const ManagerOrdersView: React.FC = () => {
         setLoading(false);
       }
     }
-  }, [authHeaders, hasLoaded]);
+  }, [authHeaders, filters, hasLoaded, page]);
 
   useEffect(() => {
-    fetchOrders({ showSpinner: true });
+    fetchOrders({ showSpinner: !hasLoaded, targetPage: page });
+  }, [fetchOrders, hasLoaded, page]);
+
+  useEffect(() => {
     const interval = window.setInterval(() => {
-      fetchOrders();
+      fetchOrders({ targetPage: page });
     }, 15000);
     return () => window.clearInterval(interval);
-  }, [fetchOrders]);
-
-  useEffect(() => {
-    if (!hasLoaded) {
-      return;
-    }
-    if (!filtersReadyForSync.current) {
-      filtersReadyForSync.current = true;
-      return;
-    }
-    fetchOrders();
-  }, [filters, fetchOrders, hasLoaded]);
+  }, [fetchOrders, page]);
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFilters(f => ({ ...f, [name]: value }));
+    setPage(0);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -134,9 +127,8 @@ const ManagerOrdersView: React.FC = () => {
 
   const resetFilters = () => {
     const cleared = { dateFrom: '', dateTo: '', timeFrom: '', timeTo: '', status: '', type: '' };
-    filtersRef.current = cleared;
     setFilters(cleared);
-    fetchOrders({ showSpinner: true });
+    setPage(0);
   };
 
   const visibleOrdersCount = filteredOrders.length;
@@ -155,20 +147,23 @@ const ManagerOrdersView: React.FC = () => {
   const formattedRefresh = lastRefresh
     ? new Date(lastRefresh).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
     : '---';
+  const canGoPrev = page > 0;
+  const canGoNext = page + 1 < totalPages;
+  const pageLabel = totalPages > 0 ? page + 1 : 0;
 
   return (
     <div className="manager-view">
       <div className="manager-view-header manager-view-header--wrap">
         <div>
-          <h2>Przeglad zamowien</h2>
-          <span className="manager-refresh-info">Odswiezono: {formattedRefresh}</span>
+          <h2>Przegląd zamówień</h2>
+          <span className="manager-refresh-info">Odświeżono: {formattedRefresh}</span>
         </div>
         <a href="/" className="manager-nav-back">&larr; Powrót do strony głównej</a>
       </div>
 
       <div className="manager-summary-grid compact">
         <div className="manager-summary-card">
-          <span className="manager-summary-title">Widoczne zamowienia</span>
+          <span className="manager-summary-title">Widoczne zamówienia</span>
           <strong>{visibleSummary}</strong>
         </div>
         <div className="manager-summary-card">
@@ -180,15 +175,47 @@ const ManagerOrdersView: React.FC = () => {
           <strong>{readyCount}</strong>
         </div>
         <div className="manager-summary-card">
-          <span className="manager-summary-title">Suma wartosci</span>
-          <strong>{totalSum.toFixed(2)} zl</strong>
+          <span className="manager-summary-title">Suma wartości</span>
+          <strong>{totalSum.toFixed(2)} zł</strong>
         </div>
       </div>
-      {totalAvailable > orders.length && (
-        <p className="manager-refresh-info" style={{ marginTop: 8 }}>
-          Pokazano pierwsze {orders.length} z {totalAvailable} wyników. Doprecyzuj filtry, aby zawęzić wyniki.
-        </p>
-      )}
+
+      <div className="manager-pagination" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '16px 0' }}>
+        <button
+          className="manager-cancel-btn"
+          onClick={() => setPage(0)}
+          disabled={!canGoPrev}
+        >
+          « Pierwsza
+        </button>
+        <button
+          className="manager-cancel-btn"
+          onClick={() => setPage(prev => Math.max(prev - 1, 0))}
+          disabled={!canGoPrev}
+        >
+          ‹ Poprzednia
+        </button>
+        <span style={{ minWidth: 150, textAlign: 'center' }}>
+          Strona {pageLabel} z {totalPages}
+        </span>
+        <button
+          className="manager-save-btn"
+          onClick={() => setPage(prev => Math.min(prev + 1, Math.max(totalPages - 1, 0)))}
+          disabled={!canGoNext}
+        >
+          Następna ›
+        </button>
+        <button
+          className="manager-save-btn"
+          onClick={() => setPage(Math.max(totalPages - 1, 0))}
+          disabled={!canGoNext}
+        >
+          Ostatnia »
+        </button>
+      </div>
+      <p className="manager-refresh-info" style={{ marginTop: -8, marginBottom: 16 }}>
+        Łącznie {totalAvailable} zamówień · strona {pageLabel} z {totalPages}
+      </p>
 
       <div className="manager-filters">
         <label>
@@ -222,11 +249,15 @@ const ManagerOrdersView: React.FC = () => {
           </select>
         </label>
         <div style={{ display: 'inline-flex', gap: 8, marginLeft: 16 }}>
-          <button className="manager-save-btn" onClick={() => fetchOrders({ showSpinner: true })}>Filtruj</button>
+          <button className="manager-save-btn" onClick={() => { setPage(0); fetchOrders({ showSpinner: true, targetPage: 0 }); }}>
+            Filtruj
+          </button>
           <button type="button" className="manager-cancel-btn" onClick={resetFilters}>
             Resetuj filtry
           </button>
-          <button className="manager-save-btn" onClick={() => fetchOrders({ showSpinner: true })}>Odswiez</button>
+          <button className="manager-save-btn" onClick={() => fetchOrders({ showSpinner: true, targetPage: page })}>
+            Odśwież
+          </button>
         </div>
       </div>
       {loading ? (
