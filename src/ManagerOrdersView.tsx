@@ -111,14 +111,35 @@ const ManagerOrdersView: React.FC = () => {
     setPage(0);
   };
 
-  const filteredOrders = orders.filter(order => {
-    if (filters.timeFrom) {
-      const orderTime = order.createdAt ? order.createdAt.slice(11, 16) : '';
-      if (orderTime < filters.timeFrom) return false;
+  const timeToMinutes = (time: string) => {
+    const [hours, minutes] = time.split(':').map(Number);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      return null;
     }
-    if (filters.timeTo) {
-      const orderTime = order.createdAt ? order.createdAt.slice(11, 16) : '';
-      if (orderTime > filters.timeTo) return false;
+    return hours * 60 + minutes;
+  };
+
+  const getOrderTimeMinutes = (createdAt: string | null) => {
+    if (!createdAt) {
+      return null;
+    }
+    const date = new Date(createdAt);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    return date.getHours() * 60 + date.getMinutes();
+  };
+
+  const filteredOrders = orders.filter(order => {
+    const orderMinutes = getOrderTimeMinutes(order.createdAt);
+    const fromMinutes = filters.timeFrom ? timeToMinutes(filters.timeFrom) : null;
+    const toMinutes = filters.timeTo ? timeToMinutes(filters.timeTo) : null;
+
+    if (fromMinutes !== null && (orderMinutes === null || orderMinutes < fromMinutes)) {
+      return false;
+    }
+    if (toMinutes !== null && (orderMinutes === null || orderMinutes > toMinutes)) {
+      return false;
     }
     if (filters.status && order.status !== filters.status) return false;
     if (filters.type && order.type !== filters.type) return false;
@@ -282,8 +303,8 @@ const ManagerOrdersView: React.FC = () => {
             ) : filteredOrders.map(order => (
               <tr key={order.id}>
                 <td><b>{order.orderNumber}</b></td>
-                <td>{order.createdAt ? order.createdAt.replace('T', ' ').slice(0, 10) : ''}</td>
-                <td>{order.createdAt ? order.createdAt.replace('T', ' ').slice(11, 16) : ''}</td>
+                <td>{order.createdAt ? new Date(order.createdAt).toLocaleDateString('pl-PL') : ''}</td>
+                <td>{order.createdAt ? new Date(order.createdAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}</td>
                 <td>{order.type}</td>
                 <td>
                   <div className={`manager-status-pill ${order.status === 'Gotowe' || order.status === 'Zrealizowane' ? 'ready' : 'progress'}`}>
