@@ -3,17 +3,25 @@ package pl.restaurant.restaurantbackend.model;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(
+    name = "order_entity",
+    uniqueConstraints = @UniqueConstraint(name = "uk_order_date_number", columnNames = {"order_date", "order_number"})
+)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class OrderEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "order_number", nullable = false)
     private Long orderNumber;
+
+    @Column(name = "order_date", nullable = false)
+    private LocalDate orderDate;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -43,6 +51,8 @@ public class OrderEntity {
     public void setId(Long id) { this.id = id; }
     public Long getOrderNumber() { return orderNumber; }
     public void setOrderNumber(Long orderNumber) { this.orderNumber = orderNumber; }
+    public LocalDate getOrderDate() { return orderDate; }
+    public void setOrderDate(LocalDate orderDate) { this.orderDate = orderDate; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public String getType() { return type; }

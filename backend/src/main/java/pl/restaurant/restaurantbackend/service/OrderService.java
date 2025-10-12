@@ -16,10 +16,12 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.restaurant.restaurantbackend.dto.CreateOrderRequest;
+import pl.restaurant.restaurantbackend.model.DailyOrderCounter;
 import pl.restaurant.restaurantbackend.model.MenuItem;
 import pl.restaurant.restaurantbackend.model.OrderEntity;
 import pl.restaurant.restaurantbackend.model.OrderItem;
 import pl.restaurant.restaurantbackend.model.OrderStatusChange;
+import pl.restaurant.restaurantbackend.repository.DailyOrderCounterRepository;
 import pl.restaurant.restaurantbackend.repository.MenuItemRepository;
 import pl.restaurant.restaurantbackend.repository.OrderRepository;
 import pl.restaurant.restaurantbackend.repository.OrderStatusChangeRepository;
@@ -35,6 +37,9 @@ public class OrderService {
     @Autowired
     private MenuItemRepository menuItemRepository;
 
+    @Autowired
+    private DailyOrderCounterRepository dailyOrderCounterRepository;
+
     @Transactional
     public OrderEntity createOrder(CreateOrderRequest request) {
         if (request == null || request.items() == null || request.items().isEmpty()) {
@@ -42,13 +47,10 @@ public class OrderService {
         }
 
         LocalDate today = LocalDate.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay().minusNanos(1);
-        OrderEntity lastOrderToday = orderRepository.findTopByCreatedAtBetweenOrderByOrderNumberDesc(startOfDay, endOfDay);
-        Long todayNumber = 1L;
-        if (lastOrderToday != null) {
-            todayNumber = lastOrderToday.getOrderNumber() + 1;
-        }
+        DailyOrderCounter counter = dailyOrderCounterRepository.findByOrderDate(today)
+                .orElseGet(() -> dailyOrderCounterRepository.saveAndFlush(new DailyOrderCounter(today, 0L)));
+        Long todayNumber = counter.nextValue();
+        dailyOrderCounterRepository.save(counter);
 
         List<OrderItem> orderItems = new ArrayList<>();
         for (CreateOrderRequest.Item itemRequest : request.items()) {
@@ -71,6 +73,7 @@ public class OrderService {
 
         OrderEntity order = new OrderEntity();
         order.setOrderNumber(todayNumber);
+        order.setOrderDate(today);
         order.setCreatedAt(LocalDateTime.now());
         order.setStatus("W realizacji");
         order.setType(normalizeOrderType(request.type()));

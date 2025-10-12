@@ -99,6 +99,7 @@ public class RestaurantBackendApplication {
 	private static OrderEntity createOrder(Long orderNumber, LocalDateTime date, String type, String status, List<OrderItem> items) {
 		OrderEntity order = new OrderEntity();
 		order.setOrderNumber(orderNumber);
+		order.setOrderDate(date.toLocalDate());
 		order.setCreatedAt(date);
 		order.setType(type);
 		order.setStatus(status);
