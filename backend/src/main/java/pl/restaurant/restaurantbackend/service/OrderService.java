@@ -13,9 +13,15 @@ import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.restaurant.restaurantbackend.dto.CreateOrderRequest;
+import pl.restaurant.restaurantbackend.dto.OrderSearchCriteria;
 import pl.restaurant.restaurantbackend.model.DailyOrderCounter;
 import pl.restaurant.restaurantbackend.model.MenuItem;
 import pl.restaurant.restaurantbackend.model.OrderEntity;
@@ -25,6 +31,7 @@ import pl.restaurant.restaurantbackend.repository.DailyOrderCounterRepository;
 import pl.restaurant.restaurantbackend.repository.MenuItemRepository;
 import pl.restaurant.restaurantbackend.repository.OrderRepository;
 import pl.restaurant.restaurantbackend.repository.OrderStatusChangeRepository;
+import pl.restaurant.restaurantbackend.repository.specification.OrderSpecifications;
 
 @Service
 public class OrderService {
@@ -79,6 +86,29 @@ public class OrderService {
         order.setType(normalizeOrderType(request.type()));
         order.setItems(orderItems);
         return orderRepository.save(order);
+    }
+
+    public Page<OrderEntity> findOrders(OrderSearchCriteria criteria, Pageable pageable) {
+        Specification<OrderEntity> spec = OrderSpecifications.withCriteria(criteria);
+        Sort sort = defaultSort();
+        Pageable effectivePageable;
+        if (pageable == null) {
+            effectivePageable = PageRequest.of(0, 50, sort);
+        } else if (pageable.getSort().isUnsorted()) {
+            effectivePageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+        } else {
+            effectivePageable = pageable;
+        }
+        return orderRepository.findAll(spec, effectivePageable);
+    }
+
+    public List<OrderEntity> findOrders(OrderSearchCriteria criteria) {
+        Specification<OrderEntity> spec = OrderSpecifications.withCriteria(criteria);
+        return orderRepository.findAll(spec, defaultSort());
+    }
+
+    private Sort defaultSort() {
+        return Sort.by(Sort.Direction.DESC, "orderDate").and(Sort.by(Sort.Direction.DESC, "orderNumber"));
     }
 
     private String normalizeOrderType(String rawType) {

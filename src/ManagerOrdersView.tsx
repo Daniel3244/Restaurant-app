@@ -6,6 +6,16 @@ import { useAuth } from './context/AuthContext';
 const STATUS_OPTIONS = ['W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'] as const;
 const TYPE_OPTIONS = ['na miejscu', 'na wynos'] as const;
 
+const PAGE_SIZE = 200;
+
+type OrdersResponse = {
+  orders: OrderRecord[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+};
+
 type OrderRecord = {
   id: number;
   orderNumber: number;
@@ -28,6 +38,7 @@ const ManagerOrdersView: React.FC = () => {
     type: ''
   });
   const [lastRefresh, setLastRefresh] = useState<number | null>(null);
+  const [totalAvailable, setTotalAvailable] = useState(0);
   const [hasLoaded, setHasLoaded] = useState(false);
   const auth = useAuth();
   const filtersRef = useRef(filters);
@@ -60,13 +71,17 @@ const ManagerOrdersView: React.FC = () => {
       if (currentFilters.timeTo) params.append('timeTo', currentFilters.timeTo);
       if (currentFilters.status) params.append('status', currentFilters.status);
       if (currentFilters.type) params.append('type', currentFilters.type);
+      params.append('page', '0');
+      params.append('size', String(PAGE_SIZE));
 
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, {
         headers: authHeaders,
       });
       if (!res.ok) throw new Error('Blad pobierania zamowien');
-      const data = (await res.json()) as OrderRecord[];
-      setOrders(data.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()));
+      const payload = (await res.json()) as OrdersResponse;
+      const fetchedOrders = payload.orders ?? [];
+      setOrders(fetchedOrders);
+      setTotalAvailable(payload.totalElements ?? fetchedOrders.length);
       setLastRefresh(Date.now());
       setHasLoaded(true);
       setError(null);
@@ -124,6 +139,11 @@ const ManagerOrdersView: React.FC = () => {
     fetchOrders({ showSpinner: true });
   };
 
+  const visibleOrdersCount = filteredOrders.length;
+  const visibleSummary = totalAvailable > visibleOrdersCount
+    ? `${visibleOrdersCount} / ${totalAvailable}`
+    : String(visibleOrdersCount);
+
   const totalSum = filteredOrders.reduce((sum, order) => {
     const orderSum = order.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     return sum + orderSum;
@@ -149,7 +169,7 @@ const ManagerOrdersView: React.FC = () => {
       <div className="manager-summary-grid compact">
         <div className="manager-summary-card">
           <span className="manager-summary-title">Widoczne zamowienia</span>
-          <strong>{filteredOrders.length}</strong>
+          <strong>{visibleSummary}</strong>
         </div>
         <div className="manager-summary-card">
           <span className="manager-summary-title">W realizacji</span>
@@ -164,6 +184,11 @@ const ManagerOrdersView: React.FC = () => {
           <strong>{totalSum.toFixed(2)} zl</strong>
         </div>
       </div>
+      {totalAvailable > orders.length && (
+        <p className="manager-refresh-info" style={{ marginTop: 8 }}>
+          Pokazano pierwsze {orders.length} z {totalAvailable} wyników. Doprecyzuj filtry, aby zawęzić wyniki.
+        </p>
+      )}
 
       <div className="manager-filters">
         <label>

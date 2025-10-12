@@ -8,6 +8,7 @@ import { useAuth } from './context/AuthContext';
 
 const STATUS_OPTIONS = ['W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'] as const;
 const TYPE_OPTIONS = ['na miejscu', 'na wynos'] as const;
+const PREVIEW_PAGE_SIZE = 500;
 type SortOption = 'createdAt' | 'duration';
 
 type OrderPreview = {
@@ -18,6 +19,14 @@ type OrderPreview = {
   type: string;
   status: string;
   items: { id: number; name: string; quantity: number; price: number }[];
+};
+
+type OrdersResponse = {
+  orders: OrderPreview[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
 };
 
 const formatDuration = (order: OrderPreview) => {
@@ -108,17 +117,12 @@ const ManagerReportsView: React.FC = () => {
       if (typeFilter) params.append('type', typeFilter);
       if (timeFrom) params.append('timeFrom', timeFrom);
       if (timeTo) params.append('timeTo', timeTo);
+      params.append('page', '0');
+      params.append('size', String(PREVIEW_PAGE_SIZE));
 
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, { headers: authHeaders });
       if (!res.ok) throw new Error('Blad pobierania zamowien');
-      let data = (await res.json()) as OrderPreview[];
-
-      if (timeFrom) {
-        data = data.filter(order => order.createdAt && order.createdAt.slice(11, 16) >= timeFrom);
-      }
-      if (timeTo) {
-        data = data.filter(order => order.createdAt && order.createdAt.slice(11, 16) <= timeTo);
-      }
+      let data = ((await res.json()) as OrdersResponse).orders ?? [];
 
       if (sortBy === 'duration') {
         data = [...data].sort((a, b) => {
