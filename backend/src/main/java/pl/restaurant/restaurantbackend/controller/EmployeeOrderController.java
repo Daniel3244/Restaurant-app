@@ -1,6 +1,7 @@
 package pl.restaurant.restaurantbackend.controller;
 
 import java.time.LocalDate;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,11 +17,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pl.restaurant.restaurantbackend.dto.OrderSearchCriteria;
 import pl.restaurant.restaurantbackend.dto.OrdersPageResponse;
-import pl.restaurant.restaurantbackend.model.OrderEntity;
+import pl.restaurant.restaurantbackend.dto.order.OrderDto;
+import pl.restaurant.restaurantbackend.dto.order.mapper.OrderMapper;
 import pl.restaurant.restaurantbackend.repository.OrderRepository;
 import pl.restaurant.restaurantbackend.service.OrderService;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -57,7 +57,7 @@ public class EmployeeOrderController {
             builder.type(type);
         }
 
-        Page<OrderEntity> results = orderService.findOrders(builder.build(), pageable);
+        Page<OrderDto> results = orderService.findOrders(builder.build(), pageable).map(OrderMapper::toDto);
         return new OrdersPageResponse(
                 results.getContent(),
                 results.getTotalElements(),
@@ -68,7 +68,7 @@ public class EmployeeOrderController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<OrderEntity> updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
+    public ResponseEntity<OrderDto> updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
         String status = request.get("status");
         if (status == null) {
             return ResponseEntity.badRequest().build();
@@ -76,6 +76,7 @@ public class EmployeeOrderController {
         try {
             orderService.changeOrderStatus(id, status);
             return orderRepository.findById(id)
+                    .map(OrderMapper::toDto)
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {

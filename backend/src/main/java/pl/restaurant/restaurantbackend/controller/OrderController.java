@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pl.restaurant.restaurantbackend.dto.CreateOrderRequest;
-import pl.restaurant.restaurantbackend.model.OrderEntity;
+import pl.restaurant.restaurantbackend.dto.order.mapper.OrderMapper;
 import pl.restaurant.restaurantbackend.service.OrderService;
 
 @RestController
@@ -20,8 +20,7 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<?> createOrder(@RequestBody CreateOrderRequest request) {
         try {
-            OrderEntity saved = orderService.createOrder(request);
-            return ResponseEntity.ok(saved);
+            return ResponseEntity.ok(OrderMapper.toDto(orderService.createOrder(request)));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
         }
