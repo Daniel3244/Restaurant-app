@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,11 +16,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 import pl.restaurant.restaurantbackend.dto.OrderSearchCriteria;
 import pl.restaurant.restaurantbackend.dto.OrdersPageResponse;
 import pl.restaurant.restaurantbackend.dto.order.OrderDto;
@@ -80,15 +81,7 @@ public class ManagerOrderController {
     ) throws Exception {
         DateRange normalizedRange = normalizeDateRange(dateFrom, dateTo);
         OrderSearchCriteria criteria = toCriteria(normalizedRange.from(), normalizedRange.to(), timeFrom, timeTo, null, null);
-        List<OrderEntity> filtered;
-        try {
-            filtered = orderService.findOrders(criteria, MAX_REPORT_ROWS);
-        } catch (ReportLimitExceededException ex) {
-            throw new ResponseStatusException(
-                    HttpStatus.PAYLOAD_TOO_LARGE,
-                    "Za duzy zakres raportu (ponad " + ex.getLimit() + " zamowien). Prosze zwezic filtry."
-            );
-        }
+        List<OrderEntity> filtered = orderService.findOrders(criteria, MAX_REPORT_ROWS);
 
         boolean stats = "stats".equalsIgnoreCase(reportType);
         boolean csv = "csv".equalsIgnoreCase(format);
@@ -158,11 +151,11 @@ public class ManagerOrderController {
         }
 
         if (from.isAfter(to)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Data poczatkowa nie moze byc po dacie koncowej");
+            throw new IllegalArgumentException("Data poczatkowa nie moze byc po dacie koncowej");
         }
         long rangeDays = ChronoUnit.DAYS.between(from, to);
         if (rangeDays > (MAX_REPORT_RANGE_DAYS - 1)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw new IllegalArgumentException(
                     "Zakres dat dla raportu moze obejmowac maksymalnie " + MAX_REPORT_RANGE_DAYS + " dni");
         }
         return new DateRange(from, to);
@@ -180,4 +173,16 @@ public class ManagerOrderController {
     }
 
     private record DateRange(LocalDate from, LocalDate to) {}
+
+    @ExceptionHandler(ReportLimitExceededException.class)
+    public ResponseEntity<Map<String, String>> handleReportLimit(ReportLimitExceededException ex) {
+        String message = "Za duzy zakres raportu (ponad " + ex.getLimit() + " zamowien). Prosze zwezic filtry.";
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of("message", message));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+        String message = ex.getMessage() != null ? ex.getMessage() : "Nieprawidlowe parametry zapytania";
+        return ResponseEntity.badRequest().body(Map.of("message", message));
+    }
 }

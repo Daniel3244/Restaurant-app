@@ -29,6 +29,45 @@ type OrdersResponse = {
   size: number;
 };
 
+const parseErrorResponse = async (res: Response, fallback: string): Promise<never> => {
+  const contentType = res.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json')) {
+    try {
+      const payload = await res.json() as { message?: string; detail?: string; error?: string; title?: string };
+      const preferredOrder = [payload?.detail, payload?.message, payload?.error, payload?.title]
+        .map(value => typeof value === 'string' ? value.trim() : '')
+        .filter(value => value.length > 0);
+      const genericResponses = new Set([
+        'Bad Request',
+        'No message available',
+        'Internal Server Error',
+        'Error',
+        'None'
+      ]);
+      const message = preferredOrder.find(value => !genericResponses.has(value));
+      if (message) {
+        throw new Error(message);
+      }
+    } catch (err: any) {
+      if (err instanceof Error && err.message && err.message !== '[object Object]') {
+        throw err;
+      }
+    }
+  } else {
+    try {
+      const text = await res.text();
+      if (text.trim().length > 0) {
+        throw new Error(text.trim());
+      }
+    } catch (err: any) {
+      if (err instanceof Error && err.message) {
+        throw err;
+      }
+    }
+  }
+  throw new Error(fallback);
+};
+
 const formatDuration = (order: OrderPreview) => {
   if (!order.createdAt || !order.finishedAt) return '-';
   const diffMs = new Date(order.finishedAt).getTime() - new Date(order.createdAt).getTime();
@@ -136,7 +175,10 @@ const ManagerReportsView: React.FC = () => {
       const res = await fetch(`${API_BASE_URL}/api/manager/orders/report?${buildParams(reportType, format).toString()}`, {
         headers: authHeaders,
       });
-      if (!res.ok) throw new Error('Blad pobierania raportu');
+      if (!res.ok) {
+        const fallback = `Blad pobierania raportu (HTTP ${res.status})`;
+        await parseErrorResponse(res, fallback);
+      }
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -173,7 +215,10 @@ const ManagerReportsView: React.FC = () => {
       params.append('size', String(PREVIEW_PAGE_SIZE));
 
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, { headers: authHeaders });
-      if (!res.ok) throw new Error('Blad pobierania zamowien');
+      if (!res.ok) {
+        const fallback = `Blad pobierania zamowien (HTTP ${res.status})`;
+        await parseErrorResponse(res, fallback);
+      }
       let data = ((await res.json()) as OrdersResponse).orders ?? [];
 
       if (sortBy === 'duration') {
@@ -412,4 +457,3 @@ const ManagerReportsView: React.FC = () => {
 };
 
 export default ManagerReportsView;
-
