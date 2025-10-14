@@ -15,11 +15,15 @@ function OrderNumbersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const etagRef = useRef<string | null>(null);
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchOrders = async (showSpinner = false) => {
+    const shouldShowSpinner = showSpinner || !hasLoaded;
+    if (shouldShowSpinner) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const headers: HeadersInit = {};
       if (etagRef.current) {
@@ -27,28 +31,36 @@ function OrderNumbersScreen() {
       }
       const res = await fetch(`${API_BASE_URL}/api/public/orders/active`, { headers });
       if (res.status === 304) {
-        setLoading(false);
+        if (shouldShowSpinner) {
+          setLoading(false);
+        }
         return;
       }
       if (!res.ok) throw new Error('Blad pobierania zamowien');
       const data = await res.json() as Order[];
       setOrders(Array.isArray(data) ? data.filter((o: Order) => STATUS_DISPLAY.includes(o.status as any)) : []);
+      setHasLoaded(true);
+      setError(null);
       const incomingEtag = res.headers.get('ETag');
       if (incomingEtag) {
         etagRef.current = incomingEtag;
       }
     } catch (e: any) {
       setError(e?.message ?? 'Wystapil blad');
-      setOrders([]);
+      if (!hasLoaded) {
+        setOrders([]);
+      }
       etagRef.current = null;
     } finally {
-      setLoading(false);
+      if (shouldShowSpinner) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchOrders();
-    const interval = window.setInterval(fetchOrders, 5000);
+    fetchOrders(true);
+    const interval = window.setInterval(() => fetchOrders(), 5000);
     return () => window.clearInterval(interval);
   }, []);
 
