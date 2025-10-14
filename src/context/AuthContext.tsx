@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 
@@ -21,7 +21,6 @@ type AuthContextValue = {
 
 const STORAGE_KEY = 'restaurant-auth';
 const SESSION_EXPIRED_MESSAGE = 'Sesja wygasła. Zaloguj się ponownie.';
-
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function loadInitialState(): AuthState | null {
@@ -147,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: { Authorization: `Bearer ${currentToken}` },
         });
       } catch {
-        // logout is best-effort; if backend nie odpowie, i tak czyścimy lokalny stan
+        // logout is best-effort; if backend nie odpowie, i tak czyĹ›cimy lokalny stan
       }
     }
   }, [state?.token]);
@@ -172,11 +171,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data?.message ?? 'Nie udalo sie zmienic hasla');
     }
     if (res.status === 401) {
-      setState(null);
-      throw new Error('Sesja wygasla. Zaloguj sie ponownie.');
+      handleAutoLogout();
+      throw new Error('Sesja wygasła. Zaloguj się ponownie.');
     }
     throw new Error('Nie udalo sie zmienic hasla. Sprobuj ponownie.');
-  }, [state]);
+  }, [state, handleAutoLogout]);
 
   const value = useMemo<AuthContextValue>(() => ({
     token: state?.token ?? null,
