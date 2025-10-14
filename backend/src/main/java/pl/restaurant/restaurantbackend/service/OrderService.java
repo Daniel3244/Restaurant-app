@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
@@ -60,6 +62,7 @@ public class OrderService {
     @Autowired
     private DailyOrderCounterRepository dailyOrderCounterRepository;
 
+    private final ConcurrentMap<LocalDate, Object> counterLocks = new ConcurrentHashMap<>();
     private final Object activeOrdersCacheLock = new Object();
     private final Object ordersReportTemplateLock = new Object();
     private final Object statsReportTemplateLock = new Object();
@@ -74,10 +77,23 @@ public class OrderService {
         }
 
         LocalDate today = LocalDate.now();
-        DailyOrderCounter counter = dailyOrderCounterRepository.findByOrderDate(today)
-                .orElseGet(() -> dailyOrderCounterRepository.saveAndFlush(new DailyOrderCounter(today, 0L)));
+        DailyOrderCounter counter = dailyOrderCounterRepository.findByOrderDate(today).orElse(null);
+        if (counter == null) {
+            Object lock = counterLocks.computeIfAbsent(today, date -> new Object());
+            try {
+                synchronized (lock) {
+                    counter = dailyOrderCounterRepository.findByOrderDate(today)
+                            .orElseGet(() -> dailyOrderCounterRepository.saveAndFlush(new DailyOrderCounter(today, 0L)));
+                }
+            } finally {
+                counterLocks.remove(today, lock);
+            }
+        }
+        if (counter == null) {
+            throw new IllegalStateException("Nie mozna pobrac licznika zamowien dla daty " + today);
+        }
         Long todayNumber = counter.nextValue();
-        dailyOrderCounterRepository.save(counter);
+        dailyOrderCounterRepository.saveAndFlush(counter);
 
         List<OrderItem> orderItems = new ArrayList<>();
         for (CreateOrderRequest.Item itemRequest : request.items()) {
