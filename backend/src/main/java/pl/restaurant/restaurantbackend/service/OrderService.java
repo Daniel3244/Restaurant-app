@@ -1,5 +1,6 @@
 package pl.restaurant.restaurantbackend.service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -43,6 +44,8 @@ import pl.restaurant.restaurantbackend.repository.specification.OrderSpecificati
 public class OrderService {
     private static final List<String> SCREEN_ORDER_STATUSES = List.of("W realizacji", "Gotowe");
     private static final Duration ACTIVE_ORDERS_CACHE_TTL = Duration.ofSeconds(2);
+    private static final String ORDERS_REPORT_TEMPLATE = "orders_report.jrxml";
+    private static final String STATS_REPORT_TEMPLATE = "orders_stats_report.jrxml";
 
     @Autowired
     private OrderRepository orderRepository;
@@ -57,7 +60,11 @@ public class OrderService {
     private DailyOrderCounterRepository dailyOrderCounterRepository;
 
     private final Object activeOrdersCacheLock = new Object();
+    private final Object ordersReportTemplateLock = new Object();
+    private final Object statsReportTemplateLock = new Object();
     private volatile ActiveOrdersCache activeOrdersCache = ActiveOrdersCache.empty();
+    private volatile JasperReport ordersReportTemplate;
+    private volatile JasperReport statsReportTemplate;
 
     @Transactional
     public OrderEntity createOrder(CreateOrderRequest request) {
@@ -136,8 +143,7 @@ public class OrderService {
     }
 
     public byte[] generateOrdersReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
-        InputStream reportStream = new ClassPathResource("orders_report.jrxml").getInputStream();
-        JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
+        JasperReport jasperReport = getOrdersReportTemplate();
         Map<String, Object> params = new HashMap<>();
         params.put("REPORT_TITLE", title);
         params.put("REPORT_DATE_FROM", dateFrom);
@@ -183,8 +189,7 @@ public class OrderService {
     }
 
     public byte[] generateOrdersReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo, String timeFrom, String timeTo) throws Exception {
-        InputStream reportStream = new ClassPathResource("orders_report.jrxml").getInputStream();
-        JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
+        JasperReport jasperReport = getOrdersReportTemplate();
         Map<String, Object> params = new HashMap<>();
         params.put("REPORT_TITLE", title);
         params.put("REPORT_DATE_FROM", dateFrom);
@@ -238,8 +243,7 @@ public class OrderService {
     }
 
     public byte[] generateStatsReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
-        InputStream reportStream = new ClassPathResource("orders_stats_report.jrxml").getInputStream();
-        JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
+        JasperReport jasperReport = getStatsReportTemplate();
         Map<String, Object> params = new HashMap<>();
         params.put("REPORT_TITLE", title);
         params.put("REPORT_DATE_FROM", dateFrom);
@@ -269,8 +273,7 @@ public class OrderService {
     }
 
     public byte[] generateStatsReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo, String timeFrom, String timeTo) throws Exception {
-        InputStream reportStream = new ClassPathResource("orders_stats_report.jrxml").getInputStream();
-        JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
+        JasperReport jasperReport = getStatsReportTemplate();
         Map<String, Object> params = new HashMap<>();
         params.put("REPORT_TITLE", title);
         params.put("REPORT_DATE_FROM", dateFrom);
@@ -372,6 +375,44 @@ public class OrderService {
 
     private String formatMoney(double value) {
         return String.format(Locale.US, "%.2f", value);
+    }
+
+    private JasperReport getOrdersReportTemplate() {
+        JasperReport cached = ordersReportTemplate;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (ordersReportTemplateLock) {
+            cached = ordersReportTemplate;
+            if (cached == null) {
+                cached = compileReport(ORDERS_REPORT_TEMPLATE);
+                ordersReportTemplate = cached;
+            }
+            return cached;
+        }
+    }
+
+    private JasperReport getStatsReportTemplate() {
+        JasperReport cached = statsReportTemplate;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (statsReportTemplateLock) {
+            cached = statsReportTemplate;
+            if (cached == null) {
+                cached = compileReport(STATS_REPORT_TEMPLATE);
+                statsReportTemplate = cached;
+            }
+            return cached;
+        }
+    }
+
+    private JasperReport compileReport(String resourcePath) {
+        try (InputStream stream = new ClassPathResource(resourcePath).getInputStream()) {
+            return JasperCompileManager.compileReport(stream);
+        } catch (IOException | JRException ex) {
+            throw new IllegalStateException("Nie mozna skompilowac szablonu raportu: " + resourcePath, ex);
+        }
     }
 
     @Transactional
