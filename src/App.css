@@ -152,7 +152,11 @@ html, body {
   justify-content: space-between;
   padding: 0 16px 16px;
   font-weight: 600;
-  color: #fff;
+  color: #222;
+}
+
+.manager-nav-title span {
+  color: var(--main-orange);
 }
 
 .manager-logout-btn {
@@ -1839,7 +1843,7 @@ li {
 .manager-nav-title small {
   font-size: 0.75rem;
   font-weight: 500;
-  opacity: 0.75;
+  color: #666;
 }
 
 .manager-nav-actions {
@@ -1849,15 +1853,23 @@ li {
 }
 
 .manager-nav-back {
-  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--main-orange);
+  background: rgba(255, 145, 0, 0.12);
   text-decoration: none;
   font-size: 0.9rem;
-  opacity: 0.8;
-  transition: opacity 0.2s;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
 .manager-nav-back:hover {
-  opacity: 1;
+  background: rgba(255, 145, 0, 0.22);
+  color: #d97000;
+  box-shadow: 0 0 0 2px rgba(255, 145, 0, 0.15);
 }
 
 @media (max-width: 768px) {
