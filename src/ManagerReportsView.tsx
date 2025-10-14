@@ -56,6 +56,13 @@ const ManagerReportsView: React.FC = () => {
 
   const auth = useAuth();
 
+  const openNativePicker = (input: HTMLInputElement) => {
+    const picker = input as HTMLInputElement & { showPicker?: () => void };
+    if (typeof picker.showPicker === 'function') {
+      picker.showPicker();
+    }
+  };
+
   const authHeaders = useMemo(() => {
     const headers: Record<string, string> = {};
     if (auth.token) {
@@ -263,11 +270,25 @@ const ManagerReportsView: React.FC = () => {
         </label>
         <label>
           Godzina od:
-          <input type="time" value={timeFrom} onChange={e => setTimeFrom(e.target.value)} className="manager-input" />
+          <input
+            type="time"
+            value={timeFrom}
+            onChange={e => setTimeFrom(e.target.value)}
+            className="manager-input"
+            onFocus={event => openNativePicker(event.currentTarget)}
+            onClick={event => openNativePicker(event.currentTarget)}
+          />
         </label>
         <label>
           Godzina do:
-          <input type="time" value={timeTo} onChange={e => setTimeTo(e.target.value)} className="manager-input" />
+          <input
+            type="time"
+            value={timeTo}
+            onChange={e => setTimeTo(e.target.value)}
+            className="manager-input"
+            onFocus={event => openNativePicker(event.currentTarget)}
+            onClick={event => openNativePicker(event.currentTarget)}
+          />
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
           <button type="button" className="manager-save-btn" onClick={() => setQuickRange('today')}>Dzis</button>

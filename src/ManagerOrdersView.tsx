@@ -1,5 +1,9 @@
 ﻿﻿﻿﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
+import ReactDatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { pl } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { API_BASE_URL } from './config';
 import { useAuth } from './context/AuthContext';
 
@@ -37,12 +41,32 @@ const ManagerOrdersView: React.FC = () => {
     status: '',
     type: ''
   });
+  const [dateRange, setDateRange] = useState<{ dateFrom: Date | null; dateTo: Date | null }>({
+    dateFrom: null,
+    dateTo: null
+  });
   const [lastRefresh, setLastRefresh] = useState<number | null>(null);
   const [totalAvailable, setTotalAvailable] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(0);
   const [hasLoaded, setHasLoaded] = useState(false);
   const auth = useAuth();
+
+  const openNativePicker = (input: HTMLInputElement) => {
+    const picker = input as HTMLInputElement & { showPicker?: () => void };
+    if (typeof picker.showPicker === 'function') {
+      picker.showPicker();
+    }
+  };
+
+  const handleDatePickerChange = useCallback(
+    (key: 'dateFrom' | 'dateTo') => (value: Date | null) => {
+      setDateRange(prev => ({ ...prev, [key]: value }));
+      setFilters(prev => ({ ...prev, [key]: value ? format(value, 'yyyy-MM-dd') : '' }));
+      setPage(0);
+    },
+    [setPage]
+  );
 
   const authHeaders = useMemo(() => {
     const headers: Record<string, string> = {};
@@ -149,6 +173,7 @@ const ManagerOrdersView: React.FC = () => {
   const resetFilters = () => {
     const cleared = { dateFrom: '', dateTo: '', timeFrom: '', timeTo: '', status: '', type: '' };
     setFilters(cleared);
+    setDateRange({ dateFrom: null, dateTo: null });
     setPage(0);
   };
 
@@ -179,7 +204,6 @@ const ManagerOrdersView: React.FC = () => {
           <h2>Przegląd zamówień</h2>
           <span className="manager-refresh-info">Odświeżono: {formattedRefresh}</span>
         </div>
-        <a href="/" className="manager-nav-back">&larr; Powrót do strony głównej</a>
       </div>
 
       <div className="manager-summary-grid compact">
@@ -241,19 +265,53 @@ const ManagerOrdersView: React.FC = () => {
       <div className="manager-filters">
         <label>
           Data od:
-          <input type="date" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} />
+          <ReactDatePicker
+            selected={dateRange.dateFrom}
+            onChange={handleDatePickerChange('dateFrom')}
+            maxDate={dateRange.dateTo ?? undefined}
+            dateFormat="yyyy-MM-dd"
+            locale={pl}
+            placeholderText="Wybierz date"
+            isClearable
+            className="manager-datepicker"
+          />
         </label>
         <label>
           Data do:
-          <input type="date" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} />
+          <ReactDatePicker
+            selected={dateRange.dateTo}
+            onChange={handleDatePickerChange('dateTo')}
+            minDate={dateRange.dateFrom ?? undefined}
+            dateFormat="yyyy-MM-dd"
+            locale={pl}
+            placeholderText="Wybierz date"
+            isClearable
+            className="manager-datepicker"
+          />
         </label>
         <label>
           Godzina od:
-          <input type="time" name="timeFrom" value={filters.timeFrom} onChange={handleFilterChange} className="manager-input" />
+          <input
+            type="time"
+            name="timeFrom"
+            value={filters.timeFrom}
+            onChange={handleFilterChange}
+            className="manager-input"
+            onFocus={event => openNativePicker(event.currentTarget)}
+            onClick={event => openNativePicker(event.currentTarget)}
+          />
         </label>
         <label>
           Godzina do:
-          <input type="time" name="timeTo" value={filters.timeTo} onChange={handleFilterChange} className="manager-input" />
+          <input
+            type="time"
+            name="timeTo"
+            value={filters.timeTo}
+            onChange={handleFilterChange}
+            className="manager-input"
+            onFocus={event => openNativePicker(event.currentTarget)}
+            onClick={event => openNativePicker(event.currentTarget)}
+          />
         </label>
         <label>
           Status:
