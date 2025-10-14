@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 
 .github/copilot-instructions.md
+backend/run-prod.ps1
