@@ -2,7 +2,6 @@ package pl.restaurant.restaurantbackend.controller;
 
 import java.util.Optional;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -13,7 +12,6 @@ import pl.restaurant.restaurantbackend.service.AuthService.AuthSession;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
 public class AuthController {
     private final AuthService authService;
 
