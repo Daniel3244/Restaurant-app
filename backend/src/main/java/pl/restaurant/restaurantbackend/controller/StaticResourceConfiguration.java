@@ -1,5 +1,7 @@
 package pl.restaurant.restaurantbackend.controller;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,10 +18,12 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
     private final AuthInterceptor authInterceptor;
     private final String[] allowedOrigins;
     private final boolean allowCredentials;
+    private final Path uploadDirectory;
 
     public StaticResourceConfiguration(
             AuthInterceptor authInterceptor,
-            @Value("${app.cors.allowed-origins:http://localhost:5173}") String allowedOriginsProperty
+            @Value("${app.cors.allowed-origins:http://localhost:5173}") String allowedOriginsProperty,
+            @Value("${app.upload.dir:uploads}") String uploadDirProperty
     ) {
         this.authInterceptor = authInterceptor;
         List<String> origins = Arrays.stream(allowedOriginsProperty.split(","))
@@ -36,12 +40,14 @@ public class StaticResourceConfiguration implements WebMvcConfigurer {
             this.allowedOrigins = origins.toArray(String[]::new);
             this.allowCredentials = true;
         }
+        this.uploadDirectory = Paths.get(uploadDirProperty).toAbsolutePath().normalize();
     }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String uploadLocation = this.uploadDirectory.toUri().toString();
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:uploads/");
+                .addResourceLocations(uploadLocation);
     }
 
     @Override
