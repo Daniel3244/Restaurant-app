@@ -124,7 +124,7 @@ const ManagerReportsView: React.FC = () => {
     const serverTimeTo = toServerTime(timeTo);
     if (serverTimeFrom) params.append('timeFrom', serverTimeFrom);
     if (serverTimeTo) params.append('timeTo', serverTimeTo);
-    params.append('type', type);
+    params.append('reportType', type);
     params.append('format', format);
     return params;
   };
