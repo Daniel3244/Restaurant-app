@@ -43,6 +43,7 @@ import pl.restaurant.restaurantbackend.repository.specification.OrderSpecificati
 @Service
 public class OrderService {
     private static final List<String> SCREEN_ORDER_STATUSES = List.of("W realizacji", "Gotowe");
+    private static final List<String> ORDER_STATUSES = List.of("W realizacji", "Gotowe", "Zrealizowane", "Anulowane");
     private static final Duration ACTIVE_ORDERS_CACHE_TTL = Duration.ofSeconds(2);
     private static final String ORDERS_REPORT_TEMPLATE = "orders_report.jrxml";
     private static final String STATS_REPORT_TEMPLATE = "orders_stats_report.jrxml";
@@ -418,6 +419,9 @@ public class OrderService {
     @Transactional
     public void changeOrderStatus(Long orderId, String newStatus) {
         OrderEntity order = orderRepository.findById(orderId).orElseThrow();
+        if (!ORDER_STATUSES.contains(newStatus)) {
+            throw new IllegalArgumentException("Nieznany status zamowienia: " + newStatus);
+        }
         order.setStatus(newStatus);
         OrderStatusChange change = new OrderStatusChange();
         change.setOrder(order);
