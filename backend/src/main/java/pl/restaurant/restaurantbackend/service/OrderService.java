@@ -145,6 +145,19 @@ public class OrderService {
         return orderRepository.findAll(spec, defaultSort());
     }
 
+    public List<OrderEntity> findOrders(OrderSearchCriteria criteria, int maxRows) {
+        if (maxRows <= 0) {
+            return List.of();
+        }
+        Specification<OrderEntity> spec = OrderSpecifications.withCriteria(criteria);
+        Pageable pageable = PageRequest.of(0, maxRows, defaultSort());
+        Page<OrderEntity> page = orderRepository.findAll(spec, pageable);
+        if (page.getTotalElements() > maxRows) {
+            throw new ReportLimitExceededException(maxRows, page.getTotalElements());
+        }
+        return page.getContent();
+    }
+
     private Sort defaultSort() {
         return Sort.by(Sort.Direction.DESC, "orderDate").and(Sort.by(Sort.Direction.DESC, "orderNumber"));
     }
@@ -515,6 +528,25 @@ public class OrderService {
     }
 
     public record ActiveOrdersSnapshot(List<PublicOrderView> orders, String etag) {}
+
+    public static class ReportLimitExceededException extends RuntimeException {
+        private final int limit;
+        private final long total;
+
+        public ReportLimitExceededException(int limit, long total) {
+            super("Przekroczono limit " + limit + " rekordow dla raportu (znaleziono " + total + ")");
+            this.limit = limit;
+            this.total = total;
+        }
+
+        public int getLimit() {
+            return limit;
+        }
+
+        public long getTotal() {
+            return total;
+        }
+    }
 }
 
 
