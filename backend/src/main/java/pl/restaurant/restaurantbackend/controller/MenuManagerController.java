@@ -1,14 +1,13 @@
 package pl.restaurant.restaurantbackend.controller;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,14 +30,15 @@ import pl.restaurant.restaurantbackend.repository.MenuItemRepository;
 @RequestMapping("/api/manager/menu")
 public class MenuManagerController {
     private final MenuItemRepository menuItemRepository;
-    private static final String UPLOAD_DIR = "uploads/";
+    private final Path uploadDirectory;
 
-    public MenuManagerController(MenuItemRepository menuItemRepository) {
+    public MenuManagerController(
+            MenuItemRepository menuItemRepository,
+            @Value("${app.upload.dir}") Path uploadDirectory
+    ) throws IOException {
         this.menuItemRepository = menuItemRepository;
-        File uploadDir = new File(UPLOAD_DIR);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
-        }
+        this.uploadDirectory = uploadDirectory.toAbsolutePath().normalize();
+        Files.createDirectories(this.uploadDirectory);
     }
 
     @GetMapping
@@ -92,14 +92,14 @@ public class MenuManagerController {
                     .body(ImageUploadResponse.error("Niepoprawny typ pliku"));
         }
         String newFileName = UUID.randomUUID() + ".jpg";
-        Path uploadPath = Paths.get(UPLOAD_DIR, newFileName);
+        Path uploadPath = uploadDirectory.resolve(newFileName);
         try {
             Files.copy(file.getInputStream(), uploadPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ImageUploadResponse.error("Błąd zapisu pliku"));
         }
-        return ResponseEntity.ok(ImageUploadResponse.success("/" + UPLOAD_DIR + newFileName, filename));
+        return ResponseEntity.ok(ImageUploadResponse.success("/uploads/" + newFileName, filename));
     }
 
     public static class ImageUploadResponse {
