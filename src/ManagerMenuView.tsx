@@ -152,18 +152,25 @@ const ManagerMenuView: React.FC = () => {
       return;
     }
 
-    const requestInit: RequestInit = {
-      method: editId ? 'PUT' : 'POST',
-      headers: { ...authHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    };
+      const requestInit: RequestInit = {
+        method: editId ? 'PUT' : 'POST',
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      };
 
-    const url = editId ? `${API_URL}/${editId}` : API_URL;
-    await fetch(url, requestInit);
+      const url = editId ? `${API_URL}/${editId}` : API_URL;
+      const response = await fetch(url, requestInit);
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => null) as { message?: string } | null;
+        const message = errorPayload?.message ?? 'Nie udalo sie zapisac pozycji.';
+        setError(message);
+        setFeedback({ type: 'error', message });
+        return;
+      }
 
-    setForm({ name: '', description: '', price: 0, imageFile: null, category: '' });
-    setEditId(null);
-    setPreview(null);
+      setForm({ name: '', description: '', price: 0, imageFile: null, category: '' });
+      setEditId(null);
+      setPreview(null);
     const input = fileInputRef.current;
     if (input) {
       input.value = '';
