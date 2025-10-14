@@ -1,4 +1,4 @@
-﻿﻿﻿﻿import { Link, NavLink, Outlet } from 'react-router-dom';
+﻿import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../App.css';
 
@@ -18,19 +18,21 @@ function ManagerLayout() {
             <small>{auth.role ? `Rola: ${auth.role}` : 'Brak roli'}</small>
           </div>
           <div className="manager-nav-actions">
-            <Link to="/" className="manager-nav-back">&larr; Powrót</Link>
+            <Link to="/" className="manager-nav-back">Powrot</Link>
             <button className="manager-logout-btn" onClick={handleLogout}>Wyloguj</button>
           </div>
         </div>
-        <NavLink to="menu" className={({ isActive }) => isActive ? 'manager-nav-link active' : 'manager-nav-link'}>
-          Edycja menu
-        </NavLink>
-        <NavLink to="orders" className={({ isActive }) => isActive ? 'manager-nav-link active' : 'manager-nav-link'}>
-          Zamowienia
-        </NavLink>
-        <NavLink to="reports" className={({ isActive }) => isActive ? 'manager-nav-link active' : 'manager-nav-link'}>
-          Raporty
-        </NavLink>
+        <div className="manager-nav-links">
+          <NavLink to="menu" className={({ isActive }) => (isActive ? 'manager-nav-link active' : 'manager-nav-link')}>
+            Edycja menu
+          </NavLink>
+          <NavLink to="orders" className={({ isActive }) => (isActive ? 'manager-nav-link active' : 'manager-nav-link')}>
+            Zamowienia
+          </NavLink>
+          <NavLink to="reports" className={({ isActive }) => (isActive ? 'manager-nav-link active' : 'manager-nav-link')}>
+            Raporty
+          </NavLink>
+        </div>
       </nav>
       <div className="manager-nav-content">
         <Outlet />
@@ -40,4 +42,3 @@ function ManagerLayout() {
 }
 
 export default ManagerLayout;
-

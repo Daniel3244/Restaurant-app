@@ -150,7 +150,8 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px 16px;
+  gap: 16px;
+  width: 100%;
   font-weight: 600;
   color: #222;
 }
@@ -1486,30 +1487,36 @@ li {
 }
 .manager-nav {
   display: flex;
-  gap: 24px;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
   background: #fff;
   border-radius: 0 0 18px 18px;
   box-shadow: 0 2px 16px 0 rgba(255,145,0,0.08);
-  padding: 18px 0 10px 0;
+  padding: 18px 24px 16px;
   margin-bottom: 24px;
   width: 100%;
   max-width: 900px;
 }
+.manager-nav-links {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  width: 100%;
+}
 .manager-nav-link {
   color: #888;
-  font-size: 1.13rem;
+  font-size: 1.05rem;
   font-weight: 700;
   text-decoration: none;
-  padding: 8px 22px;
+  padding: 8px 20px;
   border-radius: 8px;
   transition: background 0.2s, color 0.2s;
   background: none;
   border: none;
   cursor: pointer;
   outline: none;
-  margin: 0 2px;
   display: inline-block;
 }
 .manager-nav-link.active {
@@ -1528,10 +1535,20 @@ li {
 }
 @media (max-width: 700px) {
   .manager-nav {
+    padding: 14px 16px 12px;
+    border-radius: 0 0 14px 14px;
+  }
+  .manager-nav-header {
     flex-direction: column;
-    gap: 10px;
-    padding: 10px 0 6px 0;
-    border-radius: 0 0 12px 12px;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .manager-nav-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .manager-nav-links {
+    gap: 8px;
   }
   .manager-nav-content {
     padding: 0 2px;
@@ -1847,9 +1864,10 @@ li {
 }
 
 .manager-nav-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .manager-nav-back {

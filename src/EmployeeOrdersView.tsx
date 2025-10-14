@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { API_BASE_URL } from "./config";
 import { useAuth } from "./context/AuthContext";
@@ -156,7 +156,6 @@ function EmployeeOrdersView() {
           <span className="manager-refresh-info">Widoczne: {filteredOrders.length} / {totalElements}</span>
         </div>
         <div className="manager-nav-actions">
-          <a href="/" className="manager-nav-back">&larr; Powrot do strony glownej</a>
           <button className="manager-logout-btn" onClick={auth.logout}>Wyloguj</button>
         </div>
       </div>

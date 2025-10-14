@@ -232,7 +232,6 @@ const ManagerMenuView: React.FC = () => {
     <div className="manager-view">
       <div className="manager-view-header manager-view-header--wrap">
         <h2>Zarzadzanie menu</h2>
-        <a href="/" className="manager-nav-back">&larr; Powrot do strony glownej</a>
       </div>
 
       <form className="manager-form" onSubmit={handleSubmit}>
