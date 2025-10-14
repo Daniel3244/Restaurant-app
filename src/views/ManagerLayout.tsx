@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+﻿﻿﻿﻿import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../App.css';
 
@@ -18,7 +18,7 @@ function ManagerLayout() {
             <small>{auth.role ? `Rola: ${auth.role}` : 'Brak roli'}</small>
           </div>
           <div className="manager-nav-actions">
-            <Link to="/" className="manager-nav-back">← Powrót</Link>
+            <Link to="/" className="manager-nav-back">&larr; Powrót</Link>
             <button className="manager-logout-btn" onClick={handleLogout}>Wyloguj</button>
           </div>
         </div>

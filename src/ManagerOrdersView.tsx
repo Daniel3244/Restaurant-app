@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿﻿﻿﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
 import { useAuth } from './context/AuthContext';
@@ -207,14 +207,14 @@ const ManagerOrdersView: React.FC = () => {
           onClick={() => setPage(0)}
           disabled={!canGoPrev}
         >
-          « Pierwsza
+          {'<<'} Pierwsza
         </button>
         <button
           className="manager-cancel-btn"
           onClick={() => setPage(prev => Math.max(prev - 1, 0))}
           disabled={!canGoPrev}
         >
-          ‹ Poprzednia
+          {'<'} Poprzednia
         </button>
         <span style={{ minWidth: 150, textAlign: 'center' }}>
           Strona {pageLabel} z {totalPages}
@@ -224,18 +224,18 @@ const ManagerOrdersView: React.FC = () => {
           onClick={() => setPage(prev => Math.min(prev + 1, Math.max(totalPages - 1, 0)))}
           disabled={!canGoNext}
         >
-          Następna ›
+          Następna {'>'}
         </button>
         <button
           className="manager-save-btn"
           onClick={() => setPage(Math.max(totalPages - 1, 0))}
           disabled={!canGoNext}
         >
-          Ostatnia »
+          Ostatnia {'>>'}
         </button>
       </div>
       <p className="manager-refresh-info" style={{ marginTop: -8, marginBottom: 16 }}>
-        Łącznie {totalAvailable} zamówień · strona {pageLabel} z {totalPages}
+        Łącznie {totalAvailable} zamówień — strona {pageLabel} z {totalPages}
       </p>
 
       <div className="manager-filters">
