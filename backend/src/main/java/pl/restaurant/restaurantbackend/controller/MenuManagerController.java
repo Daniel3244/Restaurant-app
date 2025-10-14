@@ -57,7 +57,10 @@ public class MenuManagerController {
     public ResponseEntity<MenuItem> updateMenuItem(@PathVariable Long id, @RequestBody MenuItem menuItem) {
         Optional<MenuItem> existing = menuItemRepository.findById(id);
         if (existing.isEmpty()) return ResponseEntity.notFound().build();
+        MenuItem current = existing.get();
         menuItem.setId(id);
+        // keep current visibility unless it is changed through the dedicated toggle endpoint
+        menuItem.setActive(current.isActive());
         return ResponseEntity.ok(menuItemRepository.save(menuItem));
     }
 
