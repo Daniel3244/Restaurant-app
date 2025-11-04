@@ -237,10 +237,27 @@ Podczas startu aplikacji (CommandLineRunner):
 - Zakres: `OrderSpecificationsTest` sprawdza filtrowanie po dacie, czasie, statusie i typie. Profil `test` korzysta z H2 w trybie MySQL.
 
 ### Testy end-to-end (Playwright)
-- Komenda: `npm run test:e2e`
-  - Buduje frontend (`npm run build`), uruchamia serwer preview (port 4173) i odpala testy.
-  - Scenariusze obejmuja logowanie menedzera, panel pracownika oraz ekran publiczny (mockowane API Playwrighta).
-- Testy "na zywo" mozna wlaczyc ustawiajac zmienna `PLAYWRIGHT_LIVE=true`. Wtedy spec `tests/e2e/live-api.spec.ts` przestaje byc pomijana i laczy sie z realnym backendem (zalecany profil `test`).
+- Podstawowy scenariusz (mockowane API):
+  ```powershell
+  npm run test:e2e
+  ```
+  - Skrypt buduje frontend (`npm run build`), uruchamia serwer preview (port 4173) i odpala testy.
+  - Obejmuje logowanie menedzera, panel pracownika oraz ekran publiczny z danymi mockowanymi przez Playwrighta.
+- Testy na zywo przeciw uruchomionemu backendowi (profil `dev` z H2):
+  ```powershell
+  # terminal 1
+  cd backend
+  $env:SPRING_PROFILES_ACTIVE = 'dev'
+  $env:APP_JWT_SECRET = 'dev-secret-key'
+  $env:APP_CORS_ALLOWED_ORIGINS = 'http://127.0.0.1:4173,http://localhost:4173'
+  .\mvnw.cmd spring-boot:run
+
+  # terminal 2 (folder glowny projektu)
+  $env:PLAYWRIGHT_LIVE = 'true'
+  npm run test:e2e
+  ```
+  - Zaczekaj, az w logach backendu pojawi sie komunikat `Tomcat started on port 8081 (http)`.
+  - Po ustawieniu `PLAYWRIGHT_LIVE` aktywowane zostaja scenariusze `tests/e2e/live-api.spec.ts`, ktore lacza sie z realnym API (kontrolery REST, seedowane dane H2).
 
 ## Kontrola jakosci i linting
 
