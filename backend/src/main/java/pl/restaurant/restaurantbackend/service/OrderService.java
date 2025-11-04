@@ -7,6 +7,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +51,9 @@ public class OrderService {
     private static final Duration ACTIVE_ORDERS_CACHE_TTL = Duration.ofSeconds(2);
     private static final String ORDERS_REPORT_TEMPLATE = "orders_report.jrxml";
     private static final String STATS_REPORT_TEMPLATE = "orders_stats_report.jrxml";
+    private static final DateTimeFormatter DATE_TIME_REPORT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DATE_REPORT_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final DateTimeFormatter TIME_REPORT_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     @Autowired
     private OrderRepository orderRepository;
@@ -95,13 +100,26 @@ public class OrderService {
         Long todayNumber = counter.nextValue();
         dailyOrderCounterRepository.saveAndFlush(counter);
 
-        List<OrderItem> orderItems = new ArrayList<>();
-        for (CreateOrderRequest.Item itemRequest : request.items()) {
+        List<CreateOrderRequest.Item> itemRequests = request.items();
+        List<Long> menuItemIds = new ArrayList<>(itemRequests.size());
+        for (CreateOrderRequest.Item itemRequest : itemRequests) {
             if (itemRequest == null || itemRequest.menuItemId() == null) {
                 throw new IllegalArgumentException("Brak identyfikatora pozycji menu.");
             }
-            MenuItem menuItem = menuItemRepository.findById(itemRequest.menuItemId())
-                    .orElseThrow(() -> new IllegalArgumentException("Pozycja menu nie istnieje."));
+            menuItemIds.add(itemRequest.menuItemId());
+        }
+
+        Map<Long, MenuItem> menuItemsById = new HashMap<>();
+        for (MenuItem menuItem : menuItemRepository.findAllById(menuItemIds)) {
+            menuItemsById.put(menuItem.getId(), menuItem);
+        }
+
+        List<OrderItem> orderItems = new ArrayList<>();
+        for (CreateOrderRequest.Item itemRequest : itemRequests) {
+            MenuItem menuItem = menuItemsById.get(itemRequest.menuItemId());
+            if (menuItem == null) {
+                throw new IllegalArgumentException("Pozycja menu nie istnieje.");
+            }
             if (!menuItem.isActive()) {
                 throw new IllegalArgumentException("Pozycja menu jest aktualnie niedostepna.");
             }
@@ -173,49 +191,7 @@ public class OrderService {
     }
 
     public byte[] generateOrdersReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
-        JasperReport jasperReport = getOrdersReportTemplate();
-        Map<String, Object> params = new HashMap<>();
-        params.put("REPORT_TITLE", title);
-        params.put("REPORT_DATE_FROM", dateFrom);
-        params.put("REPORT_DATE_TO", dateTo);
-        if (orders == null || orders.isEmpty()) {
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, new JREmptyDataSource());
-            return JasperExportManager.exportReportToPdf(jasperPrint);
-        }
-        List<Map<String, Object>> data = orders.stream().map(o -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("orderNumber", o.getOrderNumber());
-            m.put("createdAt", o.getCreatedAt() != null ? o.getCreatedAt().toString().replace("T", " ").substring(0, 19) : "");
-            m.put("type", o.getType());
-            m.put("status", o.getStatus());
-            m.put("items", o.getItems().stream()
-                .map(i -> i.getName() + " x " + i.getQuantity() + " (" + String.format("%.2f zł", i.getPrice()) + ")")
-                .collect(Collectors.joining(", ")));
-            double sum = o.getItems().stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
-            m.put("orderSum", String.format("%.2f zł", sum));
-            if (o.getCreatedAt() != null && o.getFinishedAt() != null) {
-                long seconds = java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds();
-                long min = seconds / 60;
-                long sec = seconds % 60;
-                m.put("readyToDone", String.format("%d min %02d s", min, sec));
-            } else {
-                m.put("readyToDone", "-");
-            }
-            return m;
-        }).collect(Collectors.toList());
-        double totalSum = orders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
-        List<Long> allSeconds = orders.stream()
-            .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
-            .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
-            .collect(Collectors.toList());
-        double avgSec = allSeconds.isEmpty() ? 0 : allSeconds.stream().mapToLong(Long::longValue).average().orElse(0);
-        long avgMin = (long) (avgSec / 60);
-        long avgRemSec = (long) (avgSec % 60);
-        params.put("REPORT_TOTAL_SUM", String.format("%.2f zł", totalSum));
-        params.put("REPORT_AVG_TIME", allSeconds.isEmpty() ? "-" : String.format("%d min %02d s", avgMin, avgRemSec));
-        JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(data, false);
-        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, ds);
-        return JasperExportManager.exportReportToPdf(jasperPrint);
+        return generateOrdersReport(orders, title, dateFrom, dateTo, null, null);
     }
 
     public byte[] generateOrdersReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo, String timeFrom, String timeTo) throws Exception {
@@ -228,118 +204,168 @@ public class OrderService {
             JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, new JREmptyDataSource());
             return JasperExportManager.exportReportToPdf(jasperPrint);
         }
-        List<Map<String, Object>> data = orders.stream().map(o -> {
-            Map<String, Object> m = new HashMap<>();
-            m.put("orderNumber", o.getOrderNumber());
-            if (o.getCreatedAt() != null) {
-                m.put("createdAt", o.getCreatedAt().toString().replace("T", " ").substring(0, 19));
-                m.put("createdDate", o.getCreatedAt().toLocalDate().toString());
-                m.put("createdTime", o.getCreatedAt().toLocalTime().toString().substring(0,5));
-            } else {
-                m.put("createdAt", "");
-                m.put("createdDate", "");
-                m.put("createdTime", "");
-            }
-            m.put("type", o.getType());
-            m.put("status", o.getStatus());
-            m.put("items", o.getItems().stream()
-                .map(i -> i.getName() + " x " + i.getQuantity() + " (" + String.format("%.2f zł", i.getPrice()) + ")")
-                .collect(Collectors.joining(", ")));
-            double sum = o.getItems().stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
-            m.put("orderSum", String.format("%.2f zł", sum));
-            if (o.getCreatedAt() != null && o.getFinishedAt() != null) {
-                long seconds = java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds();
-                long min = seconds / 60;
-                long sec = seconds % 60;
-                m.put("readyToDone", String.format("%d min %02d s", min, sec));
-            } else {
-                m.put("readyToDone", "-");
-            }
-            return m;
-        }).collect(Collectors.toList());
+        List<OrderEntity> filtered = filterOrdersByTime(orders, timeFrom, timeTo);
+        List<Map<String, Object>> data = filtered.stream()
+                .map(this::buildOrderReportRow)
+                .collect(Collectors.toList());
+        double totalSum = filtered.stream()
+                .flatMap(o -> o.getItems().stream())
+                .mapToDouble(i -> i.getPrice() * i.getQuantity())
+                .sum();
+        List<Long> durations = collectDurationsInSeconds(filtered);
+        params.put("REPORT_TOTAL_SUM", formatCurrency(totalSum));
+        params.put("REPORT_AVG_TIME", formatAverageDuration(durations));
         JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(data, false);
-        double totalSum = orders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
-        List<Long> allSeconds = orders.stream()
-            .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
-            .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
-            .collect(Collectors.toList());
-        double avgSec = allSeconds.isEmpty() ? 0 : allSeconds.stream().mapToLong(Long::longValue).average().orElse(0);
-        long avgMin = (long) (avgSec / 60);
-        long avgRemSec = (long) (avgSec % 60);
-        params.put("REPORT_TOTAL_SUM", String.format("%.2f zł", totalSum));
-        params.put("REPORT_AVG_TIME", allSeconds.isEmpty() ? "-" : String.format("%d min %02d s", avgMin, avgRemSec));
         JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, ds);
         return JasperExportManager.exportReportToPdf(jasperPrint);
     }
 
-    public byte[] generateStatsReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
+        public byte[] generateStatsReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo) throws Exception {
+        return generateStatsReport(orders, title, dateFrom, dateTo, null, null);
+    }
+
+        public byte[] generateStatsReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo, String timeFrom, String timeTo) throws Exception {
         JasperReport jasperReport = getStatsReportTemplate();
         Map<String, Object> params = new HashMap<>();
         params.put("REPORT_TITLE", title);
         params.put("REPORT_DATE_FROM", dateFrom);
         params.put("REPORT_DATE_TO", dateTo);
+        if (orders == null) {
+            orders = List.of();
+        }
+        List<OrderEntity> filtered = filterOrdersByTime(orders, timeFrom, timeTo);
+        List<Map<String, String>> stats = buildStatsRows(filtered);
+        JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(stats, false);
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, ds);
+        return JasperExportManager.exportReportToPdf(jasperPrint);
+    }
+
+    private List<OrderEntity> filterOrdersByTime(List<OrderEntity> orders, String timeFrom, String timeTo) {
+        if (orders == null || orders.isEmpty()) {
+            return orders == null ? List.of() : orders;
+        }
+        LocalTime from = parseTimeOrNull(timeFrom);
+        LocalTime to = parseTimeOrNull(timeTo);
+        if (from == null && to == null) {
+            return orders;
+        }
+        return orders.stream()
+                .filter(order -> {
+                    LocalDateTime createdAt = order.getCreatedAt();
+                    if (createdAt == null) {
+                        return false;
+                    }
+                    LocalTime orderTime = createdAt.toLocalTime();
+                    if (from != null && orderTime.isBefore(from)) {
+                        return false;
+                    }
+                    if (to != null && orderTime.isAfter(to)) {
+                        return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private LocalTime parseTimeOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(value);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    private Map<String, Object> buildOrderReportRow(OrderEntity order) {
+        Map<String, Object> row = new HashMap<>();
+        row.put("orderNumber", order.getOrderNumber());
+        row.put("createdAt", formatDateTime(order.getCreatedAt()));
+        row.put("createdDate", formatDate(order.getCreatedAt()));
+        row.put("createdTime", formatTime(order.getCreatedAt()));
+        row.put("type", order.getType());
+        row.put("status", order.getStatus());
+        row.put("items", order.getItems().stream()
+                .map(item -> item.getName() + " x " + item.getQuantity() + " (" + formatCurrency(item.getPrice()) + ")")
+                .collect(Collectors.joining(", ")));
+        double orderSum = order.getItems().stream()
+                .mapToDouble(i -> i.getPrice() * i.getQuantity())
+                .sum();
+        row.put("orderSum", formatCurrency(orderSum));
+        row.put("readyToDone", formatDuration(order.getCreatedAt(), order.getFinishedAt()));
+        return row;
+    }
+
+    private List<Map<String, String>> buildStatsRows(List<OrderEntity> orders) {
         List<Map<String, String>> stats = new ArrayList<>();
-        stats.add(Map.of("label", "Liczba zamówień", "value", String.valueOf(orders.size())));
+        stats.add(statRow("Liczba zamowien", String.valueOf(orders.size())));
         Map<String, Long> productCount = orders.stream()
                 .flatMap(o -> o.getItems().stream())
-                .collect(Collectors.groupingBy(i -> i.getName(), Collectors.summingLong(i -> i.getQuantity())));
+                .collect(Collectors.groupingBy(OrderItem::getName, Collectors.summingLong(OrderItem::getQuantity)));
         Optional<Map.Entry<String, Long>> topProduct = productCount.entrySet().stream().max(Map.Entry.comparingByValue());
-        stats.add(Map.of("label", "Najczęściej kupowany produkt", "value", topProduct.map(Map.Entry::getKey).orElse("Brak")));
-        double total = orders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
-        stats.add(Map.of("label", "Suma wartości zamówień", "value", String.format("%.2f zł", total)));
-        double avg = orders.isEmpty() ? 0 : total / orders.size();
-        stats.add(Map.of("label", "Średnia wartość zamówienia", "value", String.format("%.2f zł", avg)));
-        List<Long> allSeconds = orders.stream()
-            .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
-            .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
-            .collect(Collectors.toList());
-        double avgSec = allSeconds.isEmpty() ? 0 : allSeconds.stream().mapToLong(Long::longValue).average().orElse(0);
-        long avgMin = (long) (avgSec / 60);
-        long avgRemSec = (long) (avgSec % 60);
-        stats.add(Map.of("label", "Średni czas obsługi", "value", allSeconds.isEmpty() ? "-" : String.format("%d min %02d s", avgMin, avgRemSec)));
-        JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(stats);
-        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, ds);
-        return JasperExportManager.exportReportToPdf(jasperPrint);
+        stats.add(statRow("Najczesciej kupowany produkt", topProduct.map(Map.Entry::getKey).orElse("Brak")));
+        double total = orders.stream()
+                .flatMap(o -> o.getItems().stream())
+                .mapToDouble(i -> i.getPrice() * i.getQuantity())
+                .sum();
+        stats.add(statRow("Suma wartosci zamowien", formatCurrency(total)));
+        double average = orders.isEmpty() ? 0 : total / orders.size();
+        stats.add(statRow("Srednia wartosc zamowienia", formatCurrency(average)));
+        List<Long> durations = collectDurationsInSeconds(orders);
+        stats.add(statRow("Sredni czas obslugi", formatAverageDuration(durations)));
+        return stats;
     }
 
-    public byte[] generateStatsReport(List<OrderEntity> orders, String title, String dateFrom, String dateTo, String timeFrom, String timeTo) throws Exception {
-        JasperReport jasperReport = getStatsReportTemplate();
-        Map<String, Object> params = new HashMap<>();
-        params.put("REPORT_TITLE", title);
-        params.put("REPORT_DATE_FROM", dateFrom);
-        params.put("REPORT_DATE_TO", dateTo);
-        List<OrderEntity> filtered = orders;
-        if (timeFrom != null || timeTo != null) {
-            filtered = orders.stream().filter(o -> {
-                if (o.getCreatedAt() == null) return false;
-                String orderTime = o.getCreatedAt().toLocalTime().toString().substring(0,5);
-                boolean afterFrom = timeFrom == null || orderTime.compareTo(timeFrom) >= 0;
-                boolean beforeTo = timeTo == null || orderTime.compareTo(timeTo) <= 0;
-                return afterFrom && beforeTo;
-            }).collect(Collectors.toList());
+    private Map<String, String> statRow(String label, String value) {
+        return Map.of("label", label, "value", value);
+    }
+
+    private List<Long> collectDurationsInSeconds(List<OrderEntity> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return List.of();
         }
-        List<Map<String, String>> stats = new ArrayList<>();
-        stats.add(Map.of("label", "Liczba zamówień", "value", String.valueOf(filtered.size())));
-        Map<String, Long> productCount = filtered.stream()
-                .flatMap(o -> o.getItems().stream())
-                .collect(Collectors.groupingBy(i -> i.getName(), Collectors.summingLong(i -> i.getQuantity())));
-        Optional<Map.Entry<String, Long>> topProduct = productCount.entrySet().stream().max(Map.Entry.comparingByValue());
-        stats.add(Map.of("label", "Najczęściej kupowany produkt", "value", topProduct.map(Map.Entry::getKey).orElse("Brak")));
-        double total = filtered.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
-        stats.add(Map.of("label", "Suma wartości zamówień", "value", String.format("%.2f zł", total)));
-        double avg = filtered.isEmpty() ? 0 : total / filtered.size();
-        stats.add(Map.of("label", "Średnia wartość zamówienia", "value", String.format("%.2f zł", avg)));
-        List<Long> allSeconds = filtered.stream()
-            .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
-            .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
-            .collect(Collectors.toList());
-        double avgSec = allSeconds.isEmpty() ? 0 : allSeconds.stream().mapToLong(Long::longValue).average().orElse(0);
-        long avgMin = (long) (avgSec / 60);
-        long avgRemSec = (long) (avgSec % 60);
-        stats.add(Map.of("label", "Średni czas obsługi", "value", allSeconds.isEmpty() ? "-" : String.format("%d min %02d s", avgMin, avgRemSec)));
-        JRBeanCollectionDataSource ds = new JRBeanCollectionDataSource(stats);
-        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, ds);
-        return JasperExportManager.exportReportToPdf(jasperPrint);
+        return orders.stream()
+                .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null && !o.getFinishedAt().isBefore(o.getCreatedAt()))
+                .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
+                .collect(Collectors.toList());
+    }
+
+    private String formatDuration(LocalDateTime start, LocalDateTime end) {
+        if (start == null || end == null || end.isBefore(start)) {
+            return "-";
+        }
+        long seconds = java.time.Duration.between(start, end).getSeconds();
+        long minutes = seconds / 60;
+        long remSeconds = seconds % 60;
+        return String.format("%d min %02d s", minutes, remSeconds);
+    }
+
+    private String formatAverageDuration(List<Long> durations) {
+        if (durations.isEmpty()) {
+            return "-";
+        }
+        double avgSec = durations.stream().mapToLong(Long::longValue).average().orElse(0);
+        long roundedSeconds = Math.round(avgSec);
+        long minutes = roundedSeconds / 60;
+        long remSeconds = roundedSeconds % 60;
+        return String.format("%d min %02d s", minutes, remSeconds);
+    }
+
+    private String formatDateTime(LocalDateTime value) {
+        return value != null ? DATE_TIME_REPORT_FORMAT.format(value) : "";
+    }
+
+    private String formatDate(LocalDateTime value) {
+        return value != null ? DATE_REPORT_FORMAT.format(value.toLocalDate()) : "";
+    }
+
+    private String formatTime(LocalDateTime value) {
+        return value != null ? TIME_REPORT_FORMAT.format(value.toLocalTime()) : "";
+    }
+
+    private String formatCurrency(double value) {
+        return formatMoney(value) + " zl";
     }
 
     public String generateOrdersCsv(List<OrderEntity> orders, String dateFrom, String dateTo, String timeFrom, String timeTo) {
@@ -476,10 +502,10 @@ public class OrderService {
             if (snapshot.isFresh()) {
                 return snapshot.toSnapshot();
             }
-            List<OrderEntity> activeOrders = orderRepository.findByOrderDateAndStatusIn(
-                    LocalDate.now(),
+            List<OrderEntity> activeOrders = orderRepository.findByStatusIn(
                     SCREEN_ORDER_STATUSES,
-                    Sort.by(Sort.Direction.ASC, "orderNumber")
+                    Sort.by(Sort.Direction.ASC, "orderDate")
+                            .and(Sort.by(Sort.Direction.ASC, "orderNumber"))
             );
             List<PublicOrderView> view = activeOrders.stream()
                     .map(o -> new PublicOrderView(o.getId(), o.getOrderNumber(), o.getStatus()))
