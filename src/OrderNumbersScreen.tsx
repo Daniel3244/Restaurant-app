@@ -36,7 +36,7 @@ function OrderNumbersScreen() {
         }
         return;
       }
-      if (!res.ok) throw new Error('Blad pobierania zamowien');
+  if (!res.ok) throw new Error('Błąd pobierania zamówień');
       const data = await res.json() as Order[];
       setOrders(Array.isArray(data) ? data.filter((o: Order) => STATUS_DISPLAY.includes(o.status as any)) : []);
       setHasLoaded(true);
@@ -46,7 +46,7 @@ function OrderNumbersScreen() {
         etagRef.current = incomingEtag;
       }
     } catch (e: any) {
-      setError(e?.message ?? 'Wystapil blad');
+      setError(e?.message ?? 'Wystąpił błąd');
       if (!hasLoaded) {
         setOrders([]);
       }
@@ -66,7 +66,7 @@ function OrderNumbersScreen() {
 
   return (
     <div className="order-numbers-screen">
-      <h1>Numerki zamowien</h1>
+  <h1>Numerki zamówień</h1>
       <div className="order-numbers-grid">
         {loading ? (
           <p>Loading...</p>

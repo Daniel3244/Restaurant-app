@@ -28,38 +28,38 @@ function LandingView() {
   const tiles = useMemo<TileConfig[]>(() => [
     {
       key: 'order',
-      title: 'Zamow teraz',
-      description: 'Tryb kiosku dla klientow przy stoliku.',
+      title: 'Zamów teraz',
+      description: 'Tryb kiosku dla klientów przy stoliku.',
       action: () => navigate('/order'),
-      cta: 'Otworz kiosk',
+      cta: 'Otwórz kiosk',
       badge: null,
     },
     {
       key: 'employee',
       title: 'Panel pracownika',
-      description: 'Podglad i aktualizacja statusow zamowien.',
+      description: 'Podgląd i aktualizacja statusów zamówień.',
       action: () => navigate(canUseEmployeePanel
         ? '/employee'
         : '/login?roles=manager,employee&next=/employee'),
-      cta: canUseEmployeePanel ? 'Przejdz do panelu' : 'Zaloguj sie',
-      badge: canUseEmployeePanel ? (isManager ? 'Dostep menedzera' : 'Zalogowany') : null,
+      cta: canUseEmployeePanel ? 'Przejdź do panelu' : 'Zaloguj się',
+      badge: canUseEmployeePanel ? (isManager ? 'Dostęp menedżera' : 'Zalogowany') : null,
     },
     {
       key: 'manager',
-      title: 'Panel menedzera',
-      description: 'Zarzadzanie menu, raporty i kontrola zamowien.',
+      title: 'Panel menedżera',
+      description: 'Zarządzanie menu, raporty i kontrola zamówień.',
       action: () => navigate(isManager
         ? '/manager'
         : '/login?roles=manager&next=/manager'),
-      cta: isManager ? 'Przejdz do panelu' : 'Zaloguj sie',
+      cta: isManager ? 'Przejdź do panelu' : 'Zaloguj się',
       badge: isManager ? 'Zalogowany' : null,
     },
     {
       key: 'screen',
-      title: 'Ekran numerow',
-      description: 'Widok dla klientow oczekujacych na odbior.',
+      title: 'Ekran numerów',
+      description: 'Widok dla klientów oczekujących na odbiór.',
       action: () => navigate('/screen'),
-      cta: 'Pokaz ekran',
+      cta: 'Pokaż ekran',
       badge: null,
       subtle: true,
     },
@@ -71,7 +71,7 @@ function LandingView() {
         <img src="/img/logo.jpg" alt="Logo restauracji" />
         <div className="landing-heading">
           <h1>Centrum restauracji</h1>
-          <p>Wybierz obszar, w ktorym chcesz pracowac lub pomagac klientowi.</p>
+          <p>Wybierz obszar, w którym chcesz pracować lub pomagać klientowi.</p>
         </div>
         <div className="landing-user-info">
           {auth.isAuthenticated ? (
@@ -79,20 +79,20 @@ function LandingView() {
               <span className="landing-user-badge">Zalogowany jako</span>
               <strong>{auth.role}</strong>
               <button type="button" className="landing-logout-btn" onClick={() => setShowPasswordForm(v => !v)}>
-                {showPasswordForm ? 'Ukryj zmiane hasla' : 'Zmien haslo'}
+                {showPasswordForm ? 'Ukryj zmianę hasła' : 'Zmień hasło'}
               </button>
               <button type="button" onClick={auth.logout} className="landing-logout-btn">
                 Wyloguj
               </button>
             </>
           ) : (
-            <span className="landing-user-anon">Nie jestes zalogowany</span>
+            <span className="landing-user-anon">Nie jesteś zalogowany</span>
           )}
         </div>
       </header>
       {showPasswordForm && auth.isAuthenticated && (
         <div className="landing-password-card">
-          <h3>Zmien haslo</h3>
+          <h3>Zmień hasło</h3>
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -100,10 +100,10 @@ function LandingView() {
               setPasswordFeedback(null);
               try {
                 await auth.changePassword(passwordForm.current, passwordForm.next);
-                setPasswordFeedback({ type: 'success', message: 'Haslo zostalo zaktualizowane.' });
+                setPasswordFeedback({ type: 'success', message: 'Hasło zostało zaktualizowane.' });
                 setPasswordForm({ current: '', next: '' });
               } catch (err: any) {
-                setPasswordFeedback({ type: 'error', message: err?.message ?? 'Nie udalo sie zmienic hasla.' });
+                setPasswordFeedback({ type: 'error', message: err?.message ?? 'Nie udało się zmienić hasła.' });
               } finally {
                 setProcessingPassword(false);
               }
@@ -111,7 +111,7 @@ function LandingView() {
             className="landing-password-form"
           >
             <label>
-              Obecne haslo
+              Obecne hasło
               <input
                 type="password"
                 value={passwordForm.current}
@@ -120,7 +120,7 @@ function LandingView() {
               />
             </label>
             <label>
-              Nowe haslo
+              Nowe hasło
               <input
                 type="password"
                 value={passwordForm.next}

@@ -66,7 +66,7 @@ function EmployeeOrdersView() {
         setHasLoaded(true);
         return;
       }
-      if (!res.ok) throw new Error("Blad pobierania zamowien");
+      if (!res.ok) throw new Error("Błąd pobierania zamówień");
       const payload = (await res.json()) as OrdersResponse;
       const fetchedOrders = payload.orders ?? [];
       setOrders(fetchedOrders.sort((a, b) => b.orderNumber - a.orderNumber));
@@ -77,7 +77,7 @@ function EmployeeOrdersView() {
       setHasLoaded(true);
       setError(null);
     } catch (e: any) {
-      setError(e?.message ?? "Nieznany blad");
+      setError(e?.message ?? "Nieznany błąd");
     } finally {
       if (shouldShowSpinner) {
         setLoading(false);
@@ -115,7 +115,7 @@ function EmployeeOrdersView() {
   };
 
   const handleCancel = async (order: OrderRecord) => {
-    if (!window.confirm("Czy na pewno anulowac zamowienie?")) return;
+    if (!window.confirm("Czy na pewno anulować zamówienie?")) return;
     setUpdating(order.id);
     try {
       await fetch(`${API_BASE_URL}/api/orders/${order.id}/status`, {
@@ -152,7 +152,7 @@ function EmployeeOrdersView() {
     <div className="manager-view">
       <div className="manager-view-header manager-view-header--wrap">
         <div>
-          <h2>Panel pracownika - Zamowienia</h2>
+          <h2>Panel pracownika - Zamówienia</h2>
           <span className="manager-refresh-info">Widoczne: {filteredOrders.length} / {totalElements}</span>
         </div>
         <div className="manager-nav-actions">
@@ -165,10 +165,10 @@ function EmployeeOrdersView() {
         </button>
         <span>Strona {pageLabel} z {totalPages}</span>
         <button className="manager-save-btn" onClick={() => setPage(prev => Math.min(prev + 1, Math.max(totalPages - 1, 0)))} disabled={!canGoNext}>
-          Nastepna &rarr;
+          Następna &rarr;
         </button>
         <button className="manager-save-btn" onClick={() => fetchOrders({ showSpinner: true, targetPage: page })}>
-          Odswiez
+          Odśwież
         </button>
       </div>
       <div className="employee-tabs">
@@ -221,7 +221,7 @@ function EmployeeOrdersView() {
                     <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "block", width: "100%" }}>
                       {order.items.map(item => (
                         <li key={item.id} style={{ fontSize: "0.95rem", lineHeight: "1.6", display: "inline" }}>
-                          {item.name} x {item.quantity} <span style={{ color: "#ff9100" }}>{item.price} zl</span>{" "}
+                          {item.name} x {item.quantity} <span style={{ color: "#ff9100" }}>{item.price} zł</span>{" "}
                         </li>
                       ))}
                     </ul>
@@ -256,7 +256,7 @@ function EmployeeOrdersView() {
             {filteredOrders.length === 0 && (
               <tr>
                 <td colSpan={activeTab === "todo" ? 6 : 5} style={{ textAlign: "center" }}>
-                  Brak zamowien
+                  Brak zamówień
                 </td>
               </tr>
             )}

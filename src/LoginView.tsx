@@ -6,8 +6,8 @@ import { useAuth } from './context/AuthContext';
 type Role = 'manager' | 'employee';
 
 const quickCredentials = [
-  { role: 'manager', label: 'Wypelnij dane menedzera', username: 'manager', password: 'manager123' },
-  { role: 'employee', label: 'Wypelnij dane pracownika', username: 'employee', password: 'employee123' },
+  { role: 'manager', label: 'Wypełnij dane menedżera', username: 'manager', password: 'manager123' },
+  { role: 'employee', label: 'Wypełnij dane pracownika', username: 'employee', password: 'employee123' },
 ] as const;
 
 const LoginView: React.FC = () => {
@@ -56,13 +56,13 @@ const LoginView: React.FC = () => {
     try {
       const role = await auth.login(username.trim(), password);
       if (allowedRoles.length > 0 && !allowedRoles.includes(role as Role)) {
-        setError('Brak uprawnien do tej sekcji.');
+    setError('Brak uprawnień do tej sekcji.');
         await auth.logout();
         return;
       }
       navigate(next, { replace: true });
     } catch (err: any) {
-      setError(err?.message ?? 'Blad logowania. Sprobuj ponownie.');
+      setError(err?.message ?? 'Błąd logowania. Spróbuj ponownie.');
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ const LoginView: React.FC = () => {
             />
           </label>
           <label>
-            <span>Haslo</span>
+            <span>Hasło</span>
             <input
               type="password"
               autoComplete="current-password"
@@ -100,7 +100,7 @@ const LoginView: React.FC = () => {
           </label>
           {error && <div className="login-error" role="alert">{error}</div>}
           <button type="submit" disabled={loading || !username || !password}>
-            {loading ? 'Logowanie...' : 'Zaloguj sie'}
+            {loading ? 'Logowanie...' : 'Zaloguj się'}
           </button>
         </form>
         <div className="login-helpers">
@@ -122,7 +122,7 @@ const LoginView: React.FC = () => {
                 </button>
               ))}
           </div>
-          <small>Zalogowanie wypelnia formularz, ale nadal wymaga zatwierdzenia przyciskiem.</small>
+          <small>Zalogowanie wypełnia formularz, ale nadal wymaga zatwierdzenia przyciskiem.</small>
         </div>
       </div>
     </div>

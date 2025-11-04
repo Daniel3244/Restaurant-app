@@ -176,7 +176,7 @@ const ManagerReportsView: React.FC = () => {
         headers: authHeaders,
       });
       if (!res.ok) {
-        const fallback = `Blad pobierania raportu (HTTP ${res.status})`;
+    const fallback = `Błąd pobierania raportu (HTTP ${res.status})`;
         await parseErrorResponse(res, fallback);
       }
       const blob = await res.blob();
@@ -192,7 +192,7 @@ const ManagerReportsView: React.FC = () => {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (e: any) {
-      setError(e?.message ?? 'Nieznany blad raportu');
+  setError(e?.message ?? 'Nieznany błąd raportu');
     } finally {
       setLoading(false);
     }
@@ -216,7 +216,7 @@ const ManagerReportsView: React.FC = () => {
 
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, { headers: authHeaders });
       if (!res.ok) {
-        const fallback = `Blad pobierania zamowien (HTTP ${res.status})`;
+  const fallback = `Błąd pobierania zamówień (HTTP ${res.status})`;
         await parseErrorResponse(res, fallback);
       }
       let data = ((await res.json()) as OrdersResponse).orders ?? [];
@@ -235,7 +235,7 @@ const ManagerReportsView: React.FC = () => {
 
       setOrdersPreview(data);
     } catch (e: any) {
-      setPreviewError(e?.message ?? 'Nieznany blad pobierania');
+  setPreviewError(e?.message ?? 'Nieznany błąd pobierania');
     } finally {
       setPreviewLoading(false);
     }
@@ -295,7 +295,7 @@ const ManagerReportsView: React.FC = () => {
             maxDate={dateTo ?? undefined}
             dateFormat="yyyy-MM-dd"
             locale={pl}
-            placeholderText="Wybierz date"
+            placeholderText="Wybierz datę"
             isClearable
             className="manager-datepicker"
           />
@@ -308,7 +308,7 @@ const ManagerReportsView: React.FC = () => {
             minDate={dateFrom ?? undefined}
             dateFormat="yyyy-MM-dd"
             locale={pl}
-            placeholderText="Wybierz date"
+            placeholderText="Wybierz datę"
             isClearable
             className="manager-datepicker"
           />
@@ -336,12 +336,12 @@ const ManagerReportsView: React.FC = () => {
           />
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('today')}>Dzis</button>
+          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('today')}>Dziś</button>
           <button type="button" className="manager-save-btn" onClick={() => setQuickRange('last7')}>Ostatnie 7 dni</button>
-          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('thisWeek')}>Ten tydzien</button>
-          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('thisMonth')}>Ten miesiac</button>
+          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('thisWeek')}>Ten tydzień</button>
+          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('thisMonth')}>Ten miesiąc</button>
           <button type="button" className="manager-cancel-btn" onClick={() => { setDateFrom(null); setDateTo(null); }}>
-            Wyczysc zakres
+            Wyczyść zakres
           </button>
         </div>
       </div>
@@ -352,14 +352,14 @@ const ManagerReportsView: React.FC = () => {
           disabled={loading}
           onClick={() => downloadReport('orders', 'pdf')}
         >
-          Pobierz raport zamowien (PDF)
+          Pobierz raport zamówień (PDF)
         </button>
         <button
           className="manager-save-btn"
           disabled={loading}
           onClick={() => downloadReport('orders', 'csv')}
         >
-          Pobierz raport zamowien (CSV)
+          Pobierz raport zamówień (CSV)
         </button>
         <button
           className="manager-save-btn"
@@ -379,8 +379,8 @@ const ManagerReportsView: React.FC = () => {
       </div>
 
       <div style={{ marginTop: 32, color: '#888', fontSize: '1.05rem' }}>
-        <b>Raport zamowien</b> - lista zamowien z wybranego okresu.<br />
-        <b>Raport statystyk</b> - liczba zamowien, najczesciej kupowane produkty oraz wartosci.
+        <b>Raport zamówień</b> - lista zamówień z wybranego okresu.<br />
+        <b>Raport statystyk</b> - liczba zamówień, najczęściej kupowane produkty oraz wartości.
       </div>
 
       <div style={{ marginTop: 32 }}>
@@ -404,7 +404,7 @@ const ManagerReportsView: React.FC = () => {
               <option value="duration">Czasie realizacji</option>
             </select>
           </label>
-          <button className="manager-save-btn" onClick={fetchPreview}>Odswiez</button>
+          <button className="manager-save-btn" onClick={fetchPreview}>Odśwież</button>
           <button type="button" className="manager-cancel-btn" onClick={resetFilters}>Resetuj filtry</button>
         </div>
         {previewLoading ? (
@@ -426,7 +426,7 @@ const ManagerReportsView: React.FC = () => {
             </thead>
             <tbody>
               {ordersPreview.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center' }}>Brak zamowien</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center' }}>Brak zamówień</td></tr>
               ) : ordersPreview.map(order => (
                 <tr key={order.id}>
                   <td><b>{order.orderNumber}</b></td>
@@ -439,7 +439,7 @@ const ManagerReportsView: React.FC = () => {
                       <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'block', width: '100%' }}>
                         {order.items.map(item => (
                           <li key={item.id} style={{ fontSize: '0.98rem', lineHeight: '1.6', display: 'inline' }}>
-                            {item.name} x {item.quantity} <span style={{ color: '#ff9100' }}>{item.price} zl</span>{' '}
+                            {item.name} x {item.quantity} <span style={{ color: '#ff9100' }}>{item.price} zł</span>{' '}
                           </li>
                         ))}
                       </ul>

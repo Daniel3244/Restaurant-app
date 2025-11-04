@@ -369,9 +369,10 @@ public class OrderService {
     }
 
     public String generateOrdersCsv(List<OrderEntity> orders, String dateFrom, String dateTo, String timeFrom, String timeTo) {
+        List<OrderEntity> filteredOrders = filterOrdersByTime(orders, timeFrom, timeTo);
         StringBuilder sb = new StringBuilder();
         sb.append("order_number,created_date,created_time,type,status,total_value,items\n");
-        for (OrderEntity order : orders) {
+        for (OrderEntity order : filteredOrders) {
             String createdDate = order.getCreatedAt() != null ? order.getCreatedAt().toLocalDate().toString() : "";
             String createdTime = order.getCreatedAt() != null ? order.getCreatedAt().toLocalTime().toString().substring(0, 5) : "";
             double total = order.getItems().stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
@@ -391,19 +392,20 @@ public class OrderService {
     }
 
     public String generateStatsCsv(List<OrderEntity> orders, String dateFrom, String dateTo, String timeFrom, String timeTo) {
+        List<OrderEntity> filteredOrders = filterOrdersByTime(orders, timeFrom, timeTo);
         StringBuilder sb = new StringBuilder();
         sb.append("metric,value\n");
-        sb.append("Liczba zamowien,").append(orders.size()).append('\n');
-        Map<String, Long> productCount = orders.stream()
+        sb.append("Liczba zamowien,").append(filteredOrders.size()).append('\n');
+        Map<String, Long> productCount = filteredOrders.stream()
                 .flatMap(o -> o.getItems().stream())
                 .collect(Collectors.groupingBy(OrderItem::getName, Collectors.summingLong(OrderItem::getQuantity)));
         Optional<Map.Entry<String, Long>> topProduct = productCount.entrySet().stream().max(Map.Entry.comparingByValue());
         sb.append("Najczesciej kupowany produkt,").append(escapeCsv(topProduct.map(Map.Entry::getKey).orElse("Brak"))).append('\n');
-        double total = orders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
+        double total = filteredOrders.stream().flatMap(o -> o.getItems().stream()).mapToDouble(i -> i.getPrice() * i.getQuantity()).sum();
         sb.append("Suma wartosci zamowien,").append(formatMoney(total)).append('\n');
-        double avg = orders.isEmpty() ? 0 : total / orders.size();
+        double avg = filteredOrders.isEmpty() ? 0 : total / filteredOrders.size();
         sb.append("Srednia wartosc zamowienia,").append(formatMoney(avg)).append('\n');
-        List<Long> durations = orders.stream()
+        List<Long> durations = filteredOrders.stream()
                 .filter(o -> o.getCreatedAt() != null && o.getFinishedAt() != null)
                 .map(o -> java.time.Duration.between(o.getCreatedAt(), o.getFinishedAt()).getSeconds())
                 .collect(Collectors.toList());

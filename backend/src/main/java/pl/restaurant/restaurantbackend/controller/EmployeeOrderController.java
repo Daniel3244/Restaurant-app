@@ -2,6 +2,7 @@ package pl.restaurant.restaurantbackend.controller;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -68,7 +69,7 @@ public class EmployeeOrderController {
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<OrderDto> updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
+    public ResponseEntity<?> updateOrderStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
         String status = request.get("status");
         if (status == null) {
             return ResponseEntity.badRequest().build();
@@ -79,7 +80,9 @@ public class EmployeeOrderController {
                     .map(OrderMapper::toDto)
                     .map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        } catch (NoSuchElementException ex) {
             return ResponseEntity.notFound().build();
         }
     }

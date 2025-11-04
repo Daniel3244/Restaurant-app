@@ -126,10 +126,10 @@ function OrderingKioskView() {
 
   const renderOrderNumber = () => (
     <div className="order-number-view">
-      <h2>Dziekujemy za zamowienie!</h2>
-      <p>Twoj numer zamowienia:</p>
-      <div className="order-number">{orderSent?.number}</div>
-      <button onClick={() => setOrderSent(null)}>Nowe zamowienie</button>
+          <h2>Dziękujemy za zamówienie!</h2>
+          <p>Twój numer zamówienia:</p>
+  <div className="order-number">{orderSent?.number}</div>
+  <button onClick={() => setOrderSent(null)}>Nowe zamówienie</button>
     </div>
   );
 
@@ -156,11 +156,10 @@ function OrderingKioskView() {
           onClick={() => item.active !== false && setModalItem(item)}
           style={{ cursor: item.active !== false ? 'pointer' : 'default' }}
         >
-          {item.active === false && <div className="unavailable-label">Niedostepny</div>}
           <img src={formatImageUrl(item.imageUrl)} alt={item.name} />
           <div className="menu-card-info">
             <span>{item.name}</span>
-            <span className="price">{item.price} zl</span>
+                <span className="price">{item.price} zł</span>
           </div>
         </div>
       ))}
@@ -179,7 +178,7 @@ function OrderingKioskView() {
           />
           <div className="menu-modal-info">
             <h2>{modalItem.name}</h2>
-            <div className="menu-modal-price">{modalItem.price} zl</div>
+                <div className="menu-modal-price">{modalItem.price} zł</div>
             <div className="menu-modal-desc">{modalItem.description}</div>
             <div className="menu-modal-actions">
               <button
@@ -192,7 +191,7 @@ function OrderingKioskView() {
                 Dodaj do koszyka
               </button>
               <button className="menu-modal-cancel" onClick={() => setModalItem(null)}>
-                Wroc
+                    Wróć
               </button>
             </div>
           </div>
@@ -203,7 +202,7 @@ function OrderingKioskView() {
 
   const renderSummary = () => (
     <div className="summary">
-      <h2>Podsumowanie zamowienia</h2>
+  <h2>Podsumowanie zamówienia</h2>
       {order.length === 0 ? (
         <p>Brak pozycji.</p>
       ) : (
@@ -213,15 +212,15 @@ function OrderingKioskView() {
               <img src={item.img} alt={item.name} />
               <span className="item-name">{item.name}</span>
               <span className="item-qty">x {item.quantity}</span>
-              <span className="item-sum">({item.price * item.quantity} zl)</span>
-              <button onClick={() => removeFromOrder(item.id)}>Usun</button>
+                <span className="item-sum">({item.price * item.quantity} zł)</span>
+              <button onClick={() => removeFromOrder(item.id)}>Usuń</button>
             </li>
           ))}
         </ul>
       )}
       <div className="summary-bottom">
         <strong>
-          Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zl
+            Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zł
         </strong>
         <div className="order-type-graphics">
           <div
@@ -245,18 +244,18 @@ function OrderingKioskView() {
             <span>Na wynos</span>
           </div>
         </div>
-        <button disabled={order.length === 0 || sendingOrder} onClick={sendOrder} style={{ minWidth: 180 }}>
-          {sendingOrder ? 'Wysylanie...' : 'Potwierdz zamowienie'}
+          <button disabled={order.length === 0 || sendingOrder} onClick={sendOrder} style={{ minWidth: 180 }}>
+            {sendingOrder ? 'Wysyłanie...' : 'Potwierdź zamówienie'}
         </button>
-        <button onClick={() => setShowSummary(false)}>Wroc</button>
-        <button className="cancel-btn" onClick={() => setShowCancelConfirm(true)}>
-          Anuluj zamowienie
+          <button onClick={() => setShowSummary(false)}>Wróć</button>
+          <button className="cancel-btn" onClick={() => setShowCancelConfirm(true)}>
+          Anuluj zamówienie
         </button>
       </div>
       {showCancelConfirm && (
         <div className="cancel-confirm-modal">
           <div className="cancel-confirm-content">
-            <p>Czy na pewno chcesz anulowac zamowienie?</p>
+              <p>Czy na pewno chcesz anulować zamówienie?</p>
             <div className="cancel-confirm-actions">
               <button
                 onClick={() => {
@@ -317,10 +316,10 @@ function OrderingKioskView() {
         {!showSummary && !orderSent && (
           <div className="order-bar">
             <span className="total-amount">
-              Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zl
+              Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zł
             </span>
             <button onClick={() => setShowSummary(true)} disabled={order.length === 0}>
-              Przejdz do podsumowania ({order.reduce((sum, item) => sum + item.quantity, 0)})
+              Przejdź do podsumowania ({order.reduce((sum, item) => sum + item.quantity, 0)})
             </button>
           </div>
         )}
