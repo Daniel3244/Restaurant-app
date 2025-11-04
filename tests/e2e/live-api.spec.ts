@@ -12,7 +12,7 @@ test.describe('Live API - Manager flow', () => {
     await page.goto('/login?next=/manager/menu');
 
   await page.getByLabel('Login').fill('manager');
-  await page.getByLabel('Hasło').fill('manager123');
+  await page.getByLabel(/Has.*/i).fill('manager123');
 
     // Sometimes the first login request may fail due to transient networking/CORS timing
     // issues when the preview/backend start together. Retry the click+wait a few times
@@ -25,7 +25,7 @@ test.describe('Live API - Manager flow', () => {
         await page.waitForURL('**/manager/menu', { timeout: 5000 });
         loggedIn = true;
         break;
-      } catch (e) {
+      } catch {
         // If we see an inline error like 'Failed to fetch', wait and retry
         const failedAlert = await page.locator('text=Failed to fetch').first().count();
         if (failedAlert) {
@@ -59,7 +59,7 @@ test.describe('Live API - Employee flow', () => {
   test('shows today orders after login', async ({ page }) => {
     await page.goto('/login?next=/employee');
   await page.getByLabel('Login').fill('employee');
-  await page.getByLabel('Hasło').fill('employee123');
+  await page.getByLabel(/Has.*/i).fill('employee123');
 
     // Retry login similarly to manager flow to reduce flakes when backend/preview are warming up.
     const maxAttempts = 3;
@@ -92,4 +92,3 @@ test.describe('Live API - Employee flow', () => {
   await expect(page.locator('text=/Frytki|Burger|Wrap/i')).toBeVisible();
   });
 });
-

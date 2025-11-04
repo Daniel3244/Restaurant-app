@@ -185,6 +185,8 @@ Podczas startu aplikacji (CommandLineRunner):
    - menedzer: `manager / manager123`,
    - pracownik: `employee / employee123`.
 
+> Alternatywnie mozna wystartowac oba serwisy poprzez `docker compose up --build` – szczegoly w sekcji [Konteneryzacja (Docker)](#konteneryzacja-docker).
+
 ## Tryb produkcyjny i wdrozenie
 
 ### Backend
@@ -196,6 +198,18 @@ Podczas startu aplikacji (CommandLineRunner):
 - Zbuduj projekt: `npm run build` (plik wynikowy w `dist/`).
 - Do serwowania statycznego mozesz wykorzystac dowolny serwer (np. Nginx). Upewnij sie, ze zapytania `fetch` trafiaja na backend (konfiguracja proxy lub environment).
 - Playwright w trybie produkcyjnym korzysta z `npm run preview` (port 4173) – to rowniez mozna wykorzystac jako szybki podglad po buildzie.
+
+### Konteneryzacja (Docker)
+- Plik `docker-compose.yml` uruchamia kompletny zestaw uslug: backend (Spring Boot, profil `dev`) oraz frontend (Nginx serwujacy gotowy build Vite).
+- Uruchomienie lokalne:
+  ```powershell
+  docker compose up --build
+  ```
+  - Frontend: `http://localhost:8080`
+  - Backend API: `http://localhost:8081`
+- Backend startuje w profilu `dev` z baza H2 zapisywana do wolumenu `backend_data`. Przy pierwszym uruchomieniu seedowane sa konta testowe oraz pozycje menu przeniesione z wersji produkcyjnej; dalsze zmiany (np. edycja menu) pozostaja zachowane po restarcie kontenerow. Jesli potrzebujesz w pelni produkcyjnego trybu, ustaw `SPRING_PROFILES_ACTIVE=prod` i podaj parametry MySQL.
+- Katalog `backend/uploads` z repo jest montowany do kontenera (bind mount), dlatego obrazy produktow sa dostepne od razu i mozna je aktualizowac z poziomu hosta.
+- Argument `VITE_API_BASE_URL` oraz zmienne srodowiskowe Springa (`APP_*`, `SPRING_*`) mozna modyfikowac w `docker-compose.yml`, aby dostosowac konfiguracje do srodowiska docelowego lub rejestru obrazow.
 
 ### Baza danych
 - Profil `prod` wymaga istnienia bazy `restaurantdb` oraz uzytkownika z uprawnieniami DDL/DML.
@@ -234,6 +248,14 @@ Podczas startu aplikacji (CommandLineRunner):
 - TypeScript dziala w trybie `strict`, blokujac m.in. nieuzywane parametry i importy.
 - Backend korzysta z konwencji Spring Boot; zadne automatyczne formatowanie nie jest uruchamiane podczas builda, ale projekt jest kompatybilny z `spring-javaformat`.
 
+## CI/CD
+
+- Workflow GitHub Actions znajduje sie w `.github/workflows/ci.yml`.
+  - **Frontend QA**: `npm ci`, `npm run lint`, `npm run test`, `npm run build`, `npx playwright test`.
+  - **Backend QA**: `./mvnw dependency:go-offline`, `./mvnw test`, `./mvnw package -DskipTests`.
+- Workflow uruchamia sie dla push i pull request na galezie `main`, `master`, `develop` oraz `fix/**`, zapewniajac automatyczny feedback przed scaleniem zmian.
+- Wyniki kazdego przebiegu sa widoczne w zakladce **Actions** na GitHubie, co dokumentuje historie testow i buildow na potrzeby projektu inzynierskiego.
+
 ## Struktura katalogow
 
 | Sciezka | Opis |
@@ -261,5 +283,3 @@ Podczas startu aplikacji (CommandLineRunner):
 - Dodanie modułu powiadomien (e-mail/SMS) przy zmianie statusu zamowienia.
 - Rozszerzenie testow backendu o scenariusze serwisowe (OrderService, AuthService).
 - Dodanie internacjonalizacji UI (obecnie etykiety sa po polsku, bez wsparcia wielojezycznosci).
-
-

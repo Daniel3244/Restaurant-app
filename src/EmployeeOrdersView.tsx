@@ -76,8 +76,9 @@ function EmployeeOrdersView() {
       setPage(prev => (prev === payloadPage ? prev : payloadPage));
       setHasLoaded(true);
       setError(null);
-    } catch (e: any) {
-      setError(e?.message ?? "Nieznany błąd");
+    } catch (err: unknown) {
+      const message = err instanceof Error && err.message ? err.message : "Nieznany blad";
+      setError(message);
     } finally {
       if (shouldShowSpinner) {
         setLoading(false);

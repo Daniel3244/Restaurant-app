@@ -1,4 +1,4 @@
-ï»¿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
@@ -58,25 +58,26 @@ const ManagerMenuView: React.FC = () => {
     return headers;
   }, [auth.token]);
 
-  const fetchMenu = async () => {
+  const fetchMenu = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(API_URL, { headers: authHeaders });
-      if (!res.ok) throw new Error('Nie udaÅ‚o siÄ™ pobraÄ‡ menu');
+      if (!res.ok) throw new Error('Nie udalo sie pobrac menu');
       const data = (await res.json()) as MenuItem[];
       setMenu(data);
       setLastLoaded(Date.now());
       setError(null);
-    } catch (e: any) {
-      setError(e?.message ?? 'Nieznany bÅ‚Ä…d');
+    } catch (err: unknown) {
+      const message = err instanceof Error && err.message ? err.message : 'Nieznany blad';
+      setError(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [authHeaders]);
 
   useEffect(() => {
     fetchMenu();
-  }, [authHeaders]);
+  }, [fetchMenu]);
 
   useEffect(() => {
     if (!feedback) return;
@@ -101,7 +102,7 @@ const ManagerMenuView: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (!form.category) {
-      setError('Wybierz kategoriÄ™ przed dodaniem pozycji.');
+      setError('Wybierz kategoriê przed dodaniem pozycji.');
       return;
     }
 
@@ -123,16 +124,16 @@ const ManagerMenuView: React.FC = () => {
         });
         const payload = await res.json().catch(() => null) as UploadResponse | null;
         if (!res.ok || !payload?.url) {
-          const message = payload?.error ?? (res.status === 415 ? 'Niepoprawny typ pliku' : 'Nie udaÅ‚o siÄ™ zapisaÄ‡ obrazka.');
-          setError('BÅ‚Ä…d przesyÅ‚ania pliku: ' + message);
+          const message = payload?.error ?? (res.status === 415 ? 'Niepoprawny typ pliku' : 'Nie uda³o siê zapisaæ obrazka.');
+          setError('B³¹d przesy³ania pliku: ' + message);
           setFeedback({ type: 'error', message });
           return;
         }
         imageUrl = payload.url;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Nieznany bÅ‚Ä…d';
-        setError('BÅ‚Ä…d przesyÅ‚ania pliku: ' + message);
-        setFeedback({ type: 'error', message: 'Nie udaÅ‚o siÄ™ zapisaÄ‡ obrazka.' });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Nieznany b³¹d';
+        setError('B³¹d przesy³ania pliku: ' + message);
+        setFeedback({ type: 'error', message: 'Nie uda³o siê zapisaæ obrazka.' });
         return;
       } finally {
         setUploading(false);
@@ -148,7 +149,7 @@ const ManagerMenuView: React.FC = () => {
     };
 
     if (!payload.imageUrl) {
-      setError('Nie udaÅ‚o siÄ™ ustaliÄ‡ Å›cieÅ¼ki do obrazka.');
+      setError('Nie uda³o siê ustaliæ œcie¿ki do obrazka.');
       return;
     }
 
@@ -162,7 +163,7 @@ const ManagerMenuView: React.FC = () => {
       const response = await fetch(url, requestInit);
       if (!response.ok) {
         const errorPayload = await response.json().catch(() => null) as { message?: string } | null;
-        const message = errorPayload?.message ?? 'Nie udaÅ‚o siÄ™ zapisaÄ‡ pozycji.';
+        const message = errorPayload?.message ?? 'Nie uda³o siê zapisaæ pozycji.';
         setError(message);
         setFeedback({ type: 'error', message });
         return;
@@ -176,7 +177,7 @@ const ManagerMenuView: React.FC = () => {
       input.value = '';
     }
     fetchMenu();
-    setFeedback({ type: 'success', message: editId ? 'Zmiany zapisane.' : 'Dodano nowÄ… pozycjÄ™.' });
+    setFeedback({ type: 'success', message: editId ? 'Zmiany zapisane.' : 'Dodano now¹ pozycjê.' });
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -192,12 +193,12 @@ const ManagerMenuView: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('UsunÄ…Ä‡ tÄ™ pozycjÄ™ z menu?')) {
+    if (!window.confirm('Usun¹æ tê pozycjê z menu?')) {
       return;
     }
     await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
     fetchMenu();
-    setFeedback({ type: 'success', message: 'Pozycja zostaÅ‚a usuniÄ™ta.' });
+    setFeedback({ type: 'success', message: 'Pozycja zosta³a usuniêta.' });
   };
 
   const toggleActive = async (item: MenuItem) => {
@@ -231,7 +232,7 @@ const ManagerMenuView: React.FC = () => {
   return (
     <div className="manager-view">
       <div className="manager-view-header manager-view-header--wrap">
-        <h2>ZarzÄ…dzanie menu</h2>
+        <h2>Zarz¹dzanie menu</h2>
       </div>
 
       <form className="manager-form" onSubmit={handleSubmit}>
@@ -250,7 +251,7 @@ const ManagerMenuView: React.FC = () => {
             </select>
           </label>
           <label>
-            Cena (zÅ‚)
+            Cena (z³)
             <input type="number" name="price" value={form.price} min={0} step={0.01} onChange={handleChange} required />
           </label>
         </div>
@@ -266,13 +267,13 @@ const ManagerMenuView: React.FC = () => {
             <input type="file" accept=".jpg,.jpeg" onChange={handleFileChange} ref={fileInputRef} />
           </label>
           {preview && (
-            <img src={preview} alt="PodglÄ…d" className="manager-img-thumb" style={{ alignSelf: 'flex-end' }} />
+            <img src={preview} alt="Podgl¹d" className="manager-img-thumb" style={{ alignSelf: 'flex-end' }} />
           )}
         </div>
 
         <div className="manager-form-row">
           <button type="submit" disabled={uploading} className="manager-save-btn">
-            {editId ? 'Zapisz zmiany' : 'Dodaj pozycjÄ™'}
+            {editId ? 'Zapisz zmiany' : 'Dodaj pozycjê'}
           </button>
           {editId && (
             <button
@@ -288,7 +289,7 @@ const ManagerMenuView: React.FC = () => {
                 }
               }}
             >
-              Anuluj edycjÄ™
+              Anuluj edycjê
             </button>
           )}
         </div>
@@ -386,7 +387,7 @@ const ManagerMenuView: React.FC = () => {
                 <tr key={item.id}>
                   <td>{item.name}</td>
                   <td>{CATEGORIES.find(c => c.id === item.category)?.name || item.category}</td>
-                  <td>{item.price.toFixed(2)} zÅ‚</td>
+                  <td>{item.price.toFixed(2)} z³</td>
                   <td>{item.description}</td>
                   <td>
                     {item.imageUrl && (
@@ -404,7 +405,7 @@ const ManagerMenuView: React.FC = () => {
                   <td>
                     <button className="manager-edit-btn" onClick={() => handleEdit(item)}>Edytuj</button>
                     <button className="manager-delete-btn" onClick={() => handleDelete(item.id!)}>
-                      UsuÅ„
+                      Usuñ
                     </button>
                     <button
                       className={item.active ? 'manager-toggle-btn manager-toggle-on' : 'manager-toggle-btn manager-toggle-off'}
