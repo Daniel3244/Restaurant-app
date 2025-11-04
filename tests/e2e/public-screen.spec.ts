@@ -12,7 +12,7 @@ test.describe('Public order screen', () => {
 
     await page.goto('/screen');
 
-    await expect(page.getByRole('heading', { name: /Numerki zamowien/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Numerki zam/i })).toBeVisible();
     await expect(page.getByText('45')).toBeVisible();
     await expect(page.getByText('46')).toBeVisible();
   });

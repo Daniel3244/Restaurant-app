@@ -32,12 +32,12 @@ test.describe('Employee orders board', () => {
     });
 
     await page.goto('/login?next=/employee');
-    await page.getByLabel('Login').fill('employee');
-    await page.getByLabel('Haslo').fill('employee123');
+  await page.getByLabel('Login').fill('employee');
+  await page.getByLabel(/Has.*/i).fill('employee123');
 
     await Promise.all([
-      page.waitForResponse('**/api/auth/login'),
-      page.getByRole('button', { name: /Zaloguj sie/i }).click(),
+  page.waitForResponse('**/api/auth/login'),
+  page.getByRole('button', { name: /Zaloguj/i }).click(),
     ]);
 
     await page.waitForURL('**/employee');

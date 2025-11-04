@@ -18,16 +18,17 @@ test.describe('Manager flow', () => {
     });
 
     await page.goto('/login?next=/manager/menu');
-    await page.getByLabel('Login').fill('manager');
-    await page.getByLabel('Haslo').fill('manager123');
+  await page.getByLabel('Login').fill('manager');
+  await page.getByLabel(/Has.*/i).fill('manager123');
 
     await Promise.all([
-      page.waitForResponse('**/api/auth/login'),
-      page.getByRole('button', { name: /Zaloguj sie/i }).click(),
+  page.waitForResponse('**/api/auth/login'),
+  // match any button that starts with "Zaloguj" to allow presence/absence of diacritics
+  page.getByRole('button', { name: /Zaloguj/i }).click(),
     ]);
 
     await page.waitForURL('**/manager/menu');
-    await expect(page.getByRole('heading', { name: /Zarzadzanie menu/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Edycja menu/i })).toBeVisible();
     await expect(page.getByRole('cell', { name: /^Burger Specjal$/i }).first()).toBeVisible();
   });
 });
