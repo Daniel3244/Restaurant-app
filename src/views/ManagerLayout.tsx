@@ -14,11 +14,11 @@ function ManagerLayout() {
       <nav className="manager-nav">
         <div className="manager-nav-header">
           <div className="manager-nav-title">
-            <span>Panel menedzera</span>
+            <span>Panel menedżera</span>
             <small>{auth.role ? `Rola: ${auth.role}` : 'Brak roli'}</small>
           </div>
           <div className="manager-nav-actions">
-            <Link to="/" className="manager-nav-back">Powrot</Link>
+            <Link to="/" className="manager-nav-back">Powrót</Link>
             <button className="manager-logout-btn" onClick={handleLogout}>Wyloguj</button>
           </div>
         </div>
@@ -27,7 +27,7 @@ function ManagerLayout() {
             Edycja menu
           </NavLink>
           <NavLink to="orders" className={({ isActive }) => (isActive ? 'manager-nav-link active' : 'manager-nav-link')}>
-            Zamowienia
+            Zamówienia
           </NavLink>
           <NavLink to="reports" className={({ isActive }) => (isActive ? 'manager-nav-link active' : 'manager-nav-link')}>
             Raporty

@@ -97,7 +97,7 @@ const ManagerOrdersView: React.FC = () => {
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, {
         headers: authHeaders,
       });
-      if (!res.ok) throw new Error('Blad pobierania zamowien');
+      if (!res.ok) throw new Error('Błąd pobierania zamówień');
       const payload = await res.json() as OrdersResponse;
       const fetchedOrders = payload.orders ?? [];
       setOrders(fetchedOrders);
@@ -110,7 +110,7 @@ const ManagerOrdersView: React.FC = () => {
       setHasLoaded(true);
       setError(null);
     } catch (e: any) {
-      setError(e?.message ?? 'Nieznany blad');
+      setError(e?.message ?? 'Nieznany błąd');
     } finally {
       if (shouldShowSpinner) {
         setLoading(false);
@@ -271,7 +271,7 @@ const ManagerOrdersView: React.FC = () => {
             maxDate={dateRange.dateTo ?? undefined}
             dateFormat="yyyy-MM-dd"
             locale={pl}
-            placeholderText="Wybierz date"
+            placeholderText="Wybierz datę"
             isClearable
             className="manager-datepicker"
           />
@@ -284,7 +284,7 @@ const ManagerOrdersView: React.FC = () => {
             minDate={dateRange.dateFrom ?? undefined}
             dateFormat="yyyy-MM-dd"
             locale={pl}
-            placeholderText="Wybierz date"
+            placeholderText="Wybierz datę"
             isClearable
             className="manager-datepicker"
           />
@@ -357,7 +357,7 @@ const ManagerOrdersView: React.FC = () => {
           </thead>
           <tbody>
             {filteredOrders.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center' }}>Brak zamowien</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: 'center' }}>Brak zamówień</td></tr>
             ) : filteredOrders.map(order => (
               <tr key={order.id}>
                 <td><b>{order.orderNumber}</b></td>
@@ -374,7 +374,7 @@ const ManagerOrdersView: React.FC = () => {
                     <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'block', width: '100%' }}>
                       {order.items.map(item => (
                         <li key={item.id} style={{ fontSize: '0.98rem', lineHeight: '1.6', display: 'inline' }}>
-                          {item.name} x {item.quantity} <span style={{ color: '#ff9100' }}>{item.price} zl</span>{' '}
+                          {item.name} x {item.quantity} <span style={{ color: '#ff9100' }}>{item.price} zł</span>{' '}
                         </li>
                       ))}
                     </ul>

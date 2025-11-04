@@ -126,9 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!res.ok) {
       if (res.status === 401) {
-        throw new Error('Nieprawidlowy login lub haslo.');
+        throw new Error('Nieprawidłowy login lub hasło.');
       }
-      throw new Error('Nie udalo sie zalogowac. Sprobuj ponownie.');
+      throw new Error('Nie udało się zalogować. Spróbuj ponownie.');
     }
 
     const data = await res.json() as { token: string; role: Role; expiresAt: number };
@@ -146,11 +146,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: { Authorization: `Bearer ${currentToken}` },
         });
       } catch {
-        // logout is best-effort; if backend nie odpowie, i tak czyĹ›cimy lokalny stan
+        // Logout is best-effort; even if the backend fails we still clear local state
       }
     }
   }, [state?.token]);
-
   const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
     if (!state?.token) {
       throw new Error('Brak aktywnej sesji');
@@ -168,13 +167,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     if (res.status === 400) {
       const data = await res.json().catch(() => null) as { message?: string } | null;
-      throw new Error(data?.message ?? 'Nie udalo sie zmienic hasla');
+      throw new Error(data?.message ?? 'Nie udało się zmienić hasła');
     }
     if (res.status === 401) {
       handleAutoLogout();
       throw new Error('Sesja wygasła. Zaloguj się ponownie.');
     }
-    throw new Error('Nie udalo sie zmienic hasla. Sprobuj ponownie.');
+    throw new Error('Nie udało się zmienić hasła. Spróbuj ponownie.');
   }, [state, handleAutoLogout]);
 
   const value = useMemo<AuthContextValue>(() => ({
@@ -202,3 +201,4 @@ export function useRoleAccess(required: readonly Role[]): boolean {
   if (!auth.isAuthenticated || !auth.role) return false;
   return required.includes(auth.role);
 }
+

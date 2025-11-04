@@ -62,13 +62,13 @@ const ManagerMenuView: React.FC = () => {
     setLoading(true);
     try {
       const res = await fetch(API_URL, { headers: authHeaders });
-      if (!res.ok) throw new Error('Nie udalo sie pobrac menu');
+      if (!res.ok) throw new Error('Nie udało się pobrać menu');
       const data = (await res.json()) as MenuItem[];
       setMenu(data);
       setLastLoaded(Date.now());
       setError(null);
     } catch (e: any) {
-      setError(e?.message ?? 'Nieznany blad');
+      setError(e?.message ?? 'Nieznany błąd');
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ const ManagerMenuView: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (!form.category) {
-      setError('Wybierz kategorie przed dodaniem pozycji.');
+      setError('Wybierz kategorię przed dodaniem pozycji.');
       return;
     }
 
@@ -123,16 +123,16 @@ const ManagerMenuView: React.FC = () => {
         });
         const payload = await res.json().catch(() => null) as UploadResponse | null;
         if (!res.ok || !payload?.url) {
-          const message = payload?.error ?? (res.status === 415 ? 'Niepoprawny typ pliku' : 'Nie udalo sie zapisac obrazka.');
-          setError('Blad uploadu pliku: ' + message);
+          const message = payload?.error ?? (res.status === 415 ? 'Niepoprawny typ pliku' : 'Nie udało się zapisać obrazka.');
+          setError('Błąd przesyłania pliku: ' + message);
           setFeedback({ type: 'error', message });
           return;
         }
         imageUrl = payload.url;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Nieznany blad';
-        setError('Blad uploadu pliku: ' + message);
-        setFeedback({ type: 'error', message: 'Nie udalo sie zapisac obrazka.' });
+        const message = err instanceof Error ? err.message : 'Nieznany błąd';
+        setError('Błąd przesyłania pliku: ' + message);
+        setFeedback({ type: 'error', message: 'Nie udało się zapisać obrazka.' });
         return;
       } finally {
         setUploading(false);
@@ -148,7 +148,7 @@ const ManagerMenuView: React.FC = () => {
     };
 
     if (!payload.imageUrl) {
-      setError('Nie udalo sie ustalic sciezki do obrazka.');
+      setError('Nie udało się ustalić ścieżki do obrazka.');
       return;
     }
 
@@ -162,7 +162,7 @@ const ManagerMenuView: React.FC = () => {
       const response = await fetch(url, requestInit);
       if (!response.ok) {
         const errorPayload = await response.json().catch(() => null) as { message?: string } | null;
-        const message = errorPayload?.message ?? 'Nie udalo sie zapisac pozycji.';
+        const message = errorPayload?.message ?? 'Nie udało się zapisać pozycji.';
         setError(message);
         setFeedback({ type: 'error', message });
         return;
@@ -176,7 +176,7 @@ const ManagerMenuView: React.FC = () => {
       input.value = '';
     }
     fetchMenu();
-    setFeedback({ type: 'success', message: editId ? 'Zmiany zapisane.' : 'Dodano nowa pozycje.' });
+    setFeedback({ type: 'success', message: editId ? 'Zmiany zapisane.' : 'Dodano nową pozycję.' });
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -192,12 +192,12 @@ const ManagerMenuView: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Usunac te pozycje z menu?')) {
+    if (!window.confirm('Usunąć tę pozycję z menu?')) {
       return;
     }
     await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
     fetchMenu();
-    setFeedback({ type: 'success', message: 'Pozycja zostala usunieta.' });
+    setFeedback({ type: 'success', message: 'Pozycja została usunięta.' });
   };
 
   const toggleActive = async (item: MenuItem) => {
@@ -231,7 +231,7 @@ const ManagerMenuView: React.FC = () => {
   return (
     <div className="manager-view">
       <div className="manager-view-header manager-view-header--wrap">
-        <h2>Zarzadzanie menu</h2>
+        <h2>Zarządzanie menu</h2>
       </div>
 
       <form className="manager-form" onSubmit={handleSubmit}>
@@ -250,7 +250,7 @@ const ManagerMenuView: React.FC = () => {
             </select>
           </label>
           <label>
-            Cena (zl)
+            Cena (zł)
             <input type="number" name="price" value={form.price} min={0} step={0.01} onChange={handleChange} required />
           </label>
         </div>
@@ -266,13 +266,13 @@ const ManagerMenuView: React.FC = () => {
             <input type="file" accept=".jpg,.jpeg" onChange={handleFileChange} ref={fileInputRef} />
           </label>
           {preview && (
-            <img src={preview} alt="Podglad" className="manager-img-thumb" style={{ alignSelf: 'flex-end' }} />
+            <img src={preview} alt="Podgląd" className="manager-img-thumb" style={{ alignSelf: 'flex-end' }} />
           )}
         </div>
 
         <div className="manager-form-row">
           <button type="submit" disabled={uploading} className="manager-save-btn">
-            {editId ? 'Zapisz zmiany' : 'Dodaj pozycje'}
+            {editId ? 'Zapisz zmiany' : 'Dodaj pozycję'}
           </button>
           {editId && (
             <button
@@ -288,7 +288,7 @@ const ManagerMenuView: React.FC = () => {
                 }
               }}
             >
-              Anuluj edycje
+              Anuluj edycję
             </button>
           )}
         </div>
@@ -386,7 +386,7 @@ const ManagerMenuView: React.FC = () => {
                 <tr key={item.id}>
                   <td>{item.name}</td>
                   <td>{CATEGORIES.find(c => c.id === item.category)?.name || item.category}</td>
-                  <td>{item.price.toFixed(2)} zl</td>
+                  <td>{item.price.toFixed(2)} zł</td>
                   <td>{item.description}</td>
                   <td>
                     {item.imageUrl && (
@@ -404,7 +404,7 @@ const ManagerMenuView: React.FC = () => {
                   <td>
                     <button className="manager-edit-btn" onClick={() => handleEdit(item)}>Edytuj</button>
                     <button className="manager-delete-btn" onClick={() => handleDelete(item.id!)}>
-                      Usun
+                      Usuń
                     </button>
                     <button
                       className={item.active ? 'manager-toggle-btn manager-toggle-on' : 'manager-toggle-btn manager-toggle-off'}
