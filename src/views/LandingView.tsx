@@ -63,7 +63,7 @@ function LandingView() {
       badge: null,
       subtle: true,
     },
-  ], [auth.role, navigate]);
+  ], [navigate, canUseEmployeePanel, isManager]);
 
   return (
     <div className="landing-view">
@@ -102,8 +102,9 @@ function LandingView() {
                 await auth.changePassword(passwordForm.current, passwordForm.next);
                 setPasswordFeedback({ type: 'success', message: 'Hasło zostało zaktualizowane.' });
                 setPasswordForm({ current: '', next: '' });
-              } catch (err: any) {
-                setPasswordFeedback({ type: 'error', message: err?.message ?? 'Nie udało się zmienić hasła.' });
+              } catch (err: unknown) {
+                const message = err instanceof Error && err.message ? err.message : 'Nie udało się zmienić hasła.';
+                setPasswordFeedback({ type: 'error', message });
               } finally {
                 setProcessingPassword(false);
               }

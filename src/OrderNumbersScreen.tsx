@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
 
@@ -11,6 +11,9 @@ interface Order {
   status: string;
 }
 
+const isTrackedStatus = (status: string): status is typeof STATUS_DISPLAY[number] =>
+  STATUS_DISPLAY.some(current => current === status);
+
 function OrderNumbersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +21,7 @@ function OrderNumbersScreen() {
   const [hasLoaded, setHasLoaded] = useState(false);
   const etagRef = useRef<string | null>(null);
 
-  const fetchOrders = async (showSpinner = false) => {
+  const fetchOrders = useCallback(async (showSpinner = false) => {
     const shouldShowSpinner = showSpinner || !hasLoaded;
     if (shouldShowSpinner) {
       setLoading(true);
@@ -36,17 +39,19 @@ function OrderNumbersScreen() {
         }
         return;
       }
-  if (!res.ok) throw new Error('Błąd pobierania zamówień');
+      if (!res.ok) throw new Error('Błąd pobierania zamówień');
       const data = await res.json() as Order[];
-      setOrders(Array.isArray(data) ? data.filter((o: Order) => STATUS_DISPLAY.includes(o.status as any)) : []);
+      const filtered = Array.isArray(data) ? data.filter((order): order is Order => isTrackedStatus(order.status)) : [];
+      setOrders(filtered);
       setHasLoaded(true);
       setError(null);
       const incomingEtag = res.headers.get('ETag');
       if (incomingEtag) {
         etagRef.current = incomingEtag;
       }
-    } catch (e: any) {
-      setError(e?.message ?? 'Wystąpił błąd');
+    } catch (err: unknown) {
+      const message = err instanceof Error && err.message ? err.message : 'Wystąpił błąd';
+      setError(message);
       if (!hasLoaded) {
         setOrders([]);
       }
@@ -56,13 +61,13 @@ function OrderNumbersScreen() {
         setLoading(false);
       }
     }
-  };
+  }, [hasLoaded]);
 
   useEffect(() => {
     fetchOrders(true);
     const interval = window.setInterval(() => fetchOrders(), 5000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [fetchOrders]);
 
   return (
     <div className="order-numbers-screen">

@@ -25,7 +25,7 @@ test.describe('Live API - Manager flow', () => {
         await page.waitForURL('**/manager/menu', { timeout: 5000 });
         loggedIn = true;
         break;
-      } catch (e) {
+      } catch {
         // If we see an inline error like 'Failed to fetch', wait and retry
         const failedAlert = await page.locator('text=Failed to fetch').first().count();
         if (failedAlert) {
@@ -92,4 +92,3 @@ test.describe('Live API - Employee flow', () => {
   await expect(page.locator('text=/Frytki|Burger|Wrap/i')).toBeVisible();
   });
 });
-

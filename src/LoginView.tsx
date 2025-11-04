@@ -61,8 +61,9 @@ const LoginView: React.FC = () => {
         return;
       }
       navigate(next, { replace: true });
-    } catch (err: any) {
-      setError(err?.message ?? 'Błąd logowania. Spróbuj ponownie.');
+    } catch (err: unknown) {
+      const message = err instanceof Error && err.message ? err.message : 'Błąd logowania. Spróbuj ponownie.';
+      setError(message);
     } finally {
       setLoading(false);
     }

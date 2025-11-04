@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -48,7 +48,7 @@ const parseErrorResponse = async (res: Response, fallback: string): Promise<neve
       if (message) {
         throw new Error(message);
       }
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof Error && err.message && err.message !== '[object Object]') {
         throw err;
       }
@@ -59,7 +59,7 @@ const parseErrorResponse = async (res: Response, fallback: string): Promise<neve
       if (text.trim().length > 0) {
         throw new Error(text.trim());
       }
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof Error && err.message) {
         throw err;
       }
@@ -110,7 +110,7 @@ const ManagerReportsView: React.FC = () => {
     return headers;
   }, [auth.token]);
 
-  const toServerTime = (time: string): string | null => {
+  const toServerTime = useCallback((time: string): string | null => {
     if (!time) return null;
     const [hoursStr, minutesStr] = time.split(':');
     if (hoursStr === undefined || minutesStr === undefined) {
@@ -133,7 +133,7 @@ const ManagerReportsView: React.FC = () => {
     base.setHours(hours, minutes, 0, 0);
     const iso = base.toISOString();
     return iso.slice(11, 16);
-  };
+  }, [dateFrom, dateTo]);
 
   const formatLocalDate = (iso: string | null): string => {
     if (!iso) return '';
@@ -191,14 +191,15 @@ const ManagerReportsView: React.FC = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (e: any) {
-  setError(e?.message ?? 'Nieznany błąd raportu');
+    } catch (err: unknown) {
+      const message = err instanceof Error && err.message ? err.message : 'Nieznany błąd raportu';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchPreview = async () => {
+  const fetchPreview = useCallback(async () => {
     setPreviewLoading(true);
     setPreviewError(null);
     try {
@@ -216,7 +217,7 @@ const ManagerReportsView: React.FC = () => {
 
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, { headers: authHeaders });
       if (!res.ok) {
-  const fallback = `Błąd pobierania zamówień (HTTP ${res.status})`;
+        const fallback = `Błąd pobierania zamówień (HTTP ${res.status})`;
         await parseErrorResponse(res, fallback);
       }
       let data = ((await res.json()) as OrdersResponse).orders ?? [];
@@ -234,16 +235,17 @@ const ManagerReportsView: React.FC = () => {
       }
 
       setOrdersPreview(data);
-    } catch (e: any) {
-  setPreviewError(e?.message ?? 'Nieznany błąd pobierania');
+    } catch (err: unknown) {
+      const message = err instanceof Error && err.message ? err.message : 'Nieznany błąd pobierania';
+      setPreviewError(message);
     } finally {
       setPreviewLoading(false);
     }
-  };
+  }, [authHeaders, dateFrom, dateTo, statusFilter, typeFilter, sortBy, timeFrom, timeTo, toServerTime]);
 
   useEffect(() => {
     fetchPreview();
-  }, [dateFrom, dateTo, statusFilter, typeFilter, sortBy, timeFrom, timeTo, authHeaders]);
+  }, [fetchPreview]);
 
   const setQuickRange = (range: 'today' | 'last7' | 'thisWeek' | 'thisMonth') => {
     const now = new Date();

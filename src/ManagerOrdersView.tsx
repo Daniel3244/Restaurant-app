@@ -109,8 +109,9 @@ const ManagerOrdersView: React.FC = () => {
       setLastRefresh(Date.now());
       setHasLoaded(true);
       setError(null);
-    } catch (e: any) {
-      setError(e?.message ?? 'Nieznany błąd');
+    } catch (err: unknown) {
+      const message = err instanceof Error && err.message ? err.message : 'Nieznany błąd';
+      setError(message);
     } finally {
       if (shouldShowSpinner) {
         setLoading(false);
