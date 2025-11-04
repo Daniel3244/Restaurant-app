@@ -46,5 +46,7 @@ Adres API mozna nadpisac w pliku `.env` zmienna `VITE_API_BASE_URL`.
 
 ---
 
-Instrukcje beda dalej rozbudowywane wraz z projektem.\n\n> Po zalogowaniu mozna zmienic wlasne haslo (panel startowy) – backendowe API: POST /api/auth/change-password (wymaga naglowka Authorization).
+Instrukcje beda dalej rozbudowywane wraz z projektem.\n\n> Po zalogowaniu mozna zmienic wlasne haslo (panel startowy) ï¿½ backendowe API: POST /api/auth/change-password (wymaga naglowka Authorization).
+
+ 
 
