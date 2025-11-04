@@ -11,7 +11,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 );
 
 describe('AuthContext', () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
     localStorage.clear();
@@ -19,7 +19,7 @@ describe('AuthContext', () => {
   });
 
   afterEach(() => {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   });
 
   it('logs in and stores session details', async () => {
@@ -28,7 +28,7 @@ describe('AuthContext', () => {
       ok: true,
       json: async () => ({ token: 'token-123', role: 'manager', expiresAt: future }),
     });
-    global.fetch = fetchMock as unknown as typeof global.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -54,7 +54,7 @@ describe('AuthContext', () => {
         ok: true,
         json: async () => ({}),
       });
-    global.fetch = fetchMock as unknown as typeof global.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -89,7 +89,7 @@ describe('AuthContext', () => {
         ok: false,
         json: async () => ({}),
       });
-    global.fetch = fetchMock as unknown as typeof global.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 

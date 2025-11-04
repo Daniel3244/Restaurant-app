@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite'
+import { configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // @ts-expect-error Vitest config is supported via plugin but not typed in Vite defs.
   test: {
     environment: 'jsdom',
     globals: true,
@@ -17,6 +19,8 @@ export default defineConfig({
         'src/vite-env.d.ts',
         'src/setupTests.ts'
       ]
-    }
+    },
+    exclude: [...configDefaults.exclude, 'tests/e2e/**']
   }
 })
+

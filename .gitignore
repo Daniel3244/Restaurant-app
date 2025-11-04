@@ -25,3 +25,5 @@ dist-ssr
 
 .github/copilot-instructions.md
 backend/run-prod.ps1
+playwright-report/
+test-results/
