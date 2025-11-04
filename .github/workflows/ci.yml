@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - fix/**
+  pull_request:
+
+jobs:
+  frontend:
+    name: Frontend QA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint sources
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test -- --runInBand
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Install Playwright dependencies
+        run: npx playwright install --with-deps
+
+      - name: Run end-to-end tests
+        run: npx playwright test
+
+  backend:
+    name: Backend QA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+        working-directory: backend
+
+      - name: Resolve dependencies
+        run: ./mvnw -B dependency:go-offline
+        working-directory: backend
+
+      - name: Run unit tests
+        run: ./mvnw -B test
+        working-directory: backend
+
+      - name: Build application JAR
+        run: ./mvnw -B package -DskipTests
+        working-directory: backend
