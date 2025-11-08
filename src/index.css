@@ -1,6 +1,7 @@
 :root {
   --font-sans: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   font-family: var(--font-sans);
+  font-size: 15px;
   color: #222;
   background-color: var(--main-bg, #fffaf5);
   font-weight: 400;
@@ -33,4 +34,10 @@ img, picture, video, canvas, svg {
 
 button, input, textarea, select {
   font: inherit;
+}
+
+@media (max-width: 1280px) {
+  :root {
+    font-size: 16px;
+  }
 }
