@@ -57,6 +57,17 @@ html, body {
   color: #333;
   box-sizing: border-box;
 }
+.app-shell {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 0 1.5rem 2.5rem;
+}
+
+@media (min-width: 1600px) {
+  .app-shell {
+    width: min(1400px, 100%);
+  }
+}
 .landing-view {
   max-width: 1200px;
   margin: 0 auto;

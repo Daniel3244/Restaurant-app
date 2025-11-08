@@ -14,27 +14,29 @@ import { RequireRole } from './routes/RequireAuth';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingView />} />
-      <Route path="/login" element={<LoginView />} />
-      <Route path="/order" element={<OrderingKioskView />} />
-      <Route path="/screen" element={<OrderNumbersScreen />} />
+    <div className="app-shell">
+      <Routes>
+        <Route path="/" element={<LandingView />} />
+        <Route path="/login" element={<LoginView />} />
+        <Route path="/order" element={<OrderingKioskView />} />
+        <Route path="/screen" element={<OrderNumbersScreen />} />
 
-      <Route element={<RequireRole roles={['manager','employee']} />}>
-        <Route path="/employee" element={<EmployeeOrdersView />} />
-      </Route>
-
-      <Route element={<RequireRole roles={['manager']} />}>
-        <Route path="/manager" element={<ManagerLayout />}>
-          <Route index element={<Navigate to="menu" replace />} />
-          <Route path="menu" element={<ManagerMenuView />} />
-          <Route path="orders" element={<ManagerOrdersView />} />
-          <Route path="reports" element={<ManagerReportsView />} />
+        <Route element={<RequireRole roles={['manager','employee']} />}>
+          <Route path="/employee" element={<EmployeeOrdersView />} />
         </Route>
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route element={<RequireRole roles={['manager']} />}>
+          <Route path="/manager" element={<ManagerLayout />}>
+            <Route index element={<Navigate to="menu" replace />} />
+            <Route path="menu" element={<ManagerMenuView />} />
+            <Route path="orders" element={<ManagerOrdersView />} />
+            <Route path="reports" element={<ManagerReportsView />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
   );
 }
 
