@@ -6,8 +6,8 @@ import { useAuth } from './context/AuthContext';
 type Role = 'manager' | 'employee';
 
 const quickCredentials = [
-  { role: 'manager', label: 'Wype\u0142nij dane mened\u017cera', username: 'manager', password: 'manager123' },
-  { role: 'employee', label: 'Wype\u0142nij dane pracownika', username: 'employee', password: 'employee123' },
+  { role: 'manager', label: 'Wypełnij dane menedżera', username: 'manager', password: 'manager123' },
+  { role: 'employee', label: 'Wypełnij dane pracownika', username: 'employee', password: 'employee123' },
 ] as const;
 
 const LoginView: React.FC = () => {
@@ -56,13 +56,13 @@ const LoginView: React.FC = () => {
     try {
       const role = await auth.login(username.trim(), password);
       if (allowedRoles.length > 0 && !allowedRoles.includes(role as Role)) {
-        setError('Brak uprawnie\u0144 do tej sekcji.');
+        setError('Brak uprawnień do tej sekcji.');
         await auth.logout();
         return;
       }
       navigate(next, { replace: true });
     } catch (err: unknown) {
-      const message = err instanceof Error && err.message ? err.message : 'B\u0142\u0105d logowania. Spr\u00f3buj ponownie.';
+      const message = err instanceof Error && err.message ? err.message : 'Błąd logowania. Spróbuj ponownie.';
       setError(message);
     } finally {
       setLoading(false);
@@ -90,7 +90,7 @@ const LoginView: React.FC = () => {
             />
           </label>
           <label>
-            <span>Has\u0142o</span>
+            <span>Hasło</span>
             <input
               type="password"
               autoComplete="current-password"
@@ -101,7 +101,7 @@ const LoginView: React.FC = () => {
           </label>
           {error && <div className="login-error" role="alert">{error}</div>}
           <button type="submit" disabled={loading || !username || !password}>
-            {loading ? 'Logowanie...' : 'Zaloguj si\u0119'}
+            {loading ? 'Logowanie...' : 'Zaloguj się'}
           </button>
         </form>
         <div className="login-helpers">
@@ -123,7 +123,7 @@ const LoginView: React.FC = () => {
                 </button>
               ))}
           </div>
-          <small>Zalogowanie wype\u0142nia formularz, ale nadal wymaga zatwierdzenia przyciskiem.</small>
+          <small>Zalogowanie wypełnia formularz, ale nadal wymaga zatwierdzenia przyciskiem.</small>
         </div>
       </div>
     </div>
