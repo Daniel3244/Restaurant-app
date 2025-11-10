@@ -78,9 +78,14 @@ Komunikacja odbywa sie przez REST API (JSON). Autoryzacja bazuje na naglowku `Au
 - **OrderNumbersScreen**: atlas numerow zamowien z odswiezaniem co 5 s. Wspiera ETag, aby przy braku zmian backend zwracal 304 i nie obciazal sieci.
 - **EmployeeOrdersView**: zakladki (Do zrealizowania / Zrealizowane / Anulowane), odswiezenie co 10 s, zmiana statusu i anulowanie z potwierdzeniem.
 - **ManagerLayout**: wspolny layout z nawigacja boczna i przyciskiem wylogowania, odsyla do:
-  - **ManagerMenuView**: CRUD na pozycjach menu, filtry w naglowkach tabeli, upload JPG (walidacja rozszerzenia i `Content-Type`), licznik aktywnych pozycji.
-  - **ManagerOrdersView**: filtry dat i godzin (ReactDatePicker, pola time), auto-odswiezanie co 15 s, paginacja (PAGE_SIZE = 200) i prezentacja pozycji w zamowieniu.
-  - **ManagerReportsView**: generowanie raportow pdf/csv (zamowienia i statystyki). Widok pilnuje limitu 5000 rekordow, wyswietla komunikaty bledu z backendu i pobiera pliki binarne.
+    - **ManagerMenuView**: CRUD na pozycjach menu, filtry w naglowkach tabeli, upload JPG (walidacja rozszerzenia i `Content-Type`), licznik aktywnych pozycji.
+    - **ManagerOrdersView**: filtry dat i godzin (ReactDatePicker, pola time), auto-odswiezanie co 15 s, paginacja (PAGE_SIZE = 200) i prezentacja pozycji w zamowieniu.
+    - **ManagerReportsView**: generowanie raportow pdf/csv (zamowienia i statystyki). Widok pilnuje limitu 5000 rekordow, wyswietla komunikaty bledu z backendu i pobiera pliki binarne.
+
+### Lokalizacja PL/EN
+- Interfejs posiada globalny przelacznik jezyka (flagi PL / EN) widoczny w stopce aplikacji; wybor jest zapisywany w `localStorage`, dzieki czemu preferencja przetrwa odswiezenie i ponowne logowanie.
+- Hook `useTranslate` z `LocaleContext` odpowiada za dynamiczne tlumaczenia naglowkow, komunikatow oraz etykiet we wszystkich widokach (kiosk, panel pracownika, panel menedzera, ekran numerkow i logowanie) bez potrzeby przeadowania strony.
+- Pozycje menu przechowuja pola `nameEn` oraz `descriptionEn`. Formularz menedzera pozwala je wypelnic przy dodawaniu/edycji, a backend automatycznie wypelnia brakujace wartosci (seed + skrypty z katalogu `backend/sql`). Wyswietlanie zamowien, raportow i ekranow pracowniczych korzysta z tych samych danych, wiec tlumaczenie obejmuje tez zamowienia historyczne.
 - **LoginView**: formularz logowania z szybkim wypelnianiem danych testowych oraz obsluga przekierowania `?next=` i ograniczania roli (`roles=`).
 
 ### Uwierzytelnianie w przegladarce
