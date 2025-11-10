@@ -1,4 +1,4 @@
-﻿import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import { useTranslate } from './LocaleContext';
@@ -50,13 +50,15 @@ function hasAuthorizationHeader(headers?: HeadersInit): boolean {
   return Object.keys(record).some((key) => key.toLowerCase() === 'authorization');
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
+// eslint-disable-next-line react-refresh/only-export-components
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState | null>(loadInitialState);
   const navigate = useNavigate();
   const t = useTranslate();
   const autoLogoutRef = useRef(false);
   const originalFetchRef = useRef<typeof fetch | null>(null);
-  const sessionExpiredMessage = t('Sesja wygasła. Zaloguj się ponownie.', 'Session expired. Please sign in again.');
+  const sessionExpiredMessage = t('Sesja wygas�a. Zaloguj si� ponownie.', 'Session expired. Please sign in again.');
 
   const handleAutoLogout = useCallback((message: string = sessionExpiredMessage) => {
     if (autoLogoutRef.current) return;
@@ -128,15 +130,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!res.ok) {
       if (res.status === 401) {
-        throw new Error(t('Nieprawidłowy login lub hasło.', 'Incorrect username or password.'));
+        throw new Error(t('Nieprawid�owy login lub has�o.', 'Incorrect username or password.'));
       }
-      throw new Error(t('Nie udało się zalogować. Spróbuj ponownie.', 'Could not sign in. Please try again.'));
+      throw new Error(t('Nie uda�o si� zalogowa�. Spr�buj ponownie.', 'Could not sign in. Please try again.'));
     }
 
     const data = await res.json() as { token: string; role: Role; expiresAt: number };
     setState({ token: data.token, role: data.role, expiresAt: data.expiresAt });
     return data.role;
-  }, []);
+  }, [t]);
 
   const logout = useCallback(async () => {
     const currentToken = state?.token;
@@ -169,14 +171,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     if (res.status === 400) {
       const data = await res.json().catch(() => null) as { message?: string } | null;
-      throw new Error(data?.message ?? t('Nie udało się zmienić hasła', 'Could not change password'));
+      throw new Error(data?.message ?? t('Nie uda�o si� zmieni� has�a', 'Could not change password'));
     }
     if (res.status === 401) {
       handleAutoLogout();
       throw new Error(sessionExpiredMessage);
     }
-    throw new Error(t('Nie udało się zmienić hasła. Spróbuj ponownie.', 'Could not change password. Please try again.'));
-  }, [state, handleAutoLogout]);
+    throw new Error(t('Nie uda�o si� zmieni� has�a. Spr�buj ponownie.', 'Could not change password. Please try again.'));
+  }, [state, handleAutoLogout, sessionExpiredMessage, t]);
 
   const value = useMemo<AuthContextValue>(() => ({
     token: state?.token ?? null,
@@ -203,4 +205,6 @@ export function useRoleAccess(required: readonly Role[]): boolean {
   if (!auth.isAuthenticated || !auth.role) return false;
   return required.includes(auth.role);
 }
+
+
 

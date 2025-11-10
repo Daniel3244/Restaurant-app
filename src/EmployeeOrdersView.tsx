@@ -103,7 +103,7 @@ function EmployeeOrdersView() {
         }
       }
     },
-    [API_BASE_URL, authHeaders, hasLoaded, page, t],
+    [authHeaders, hasLoaded, page, t],
   );
 
   useEffect(() => {

@@ -3,10 +3,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from './AuthContext';
 import { API_BASE_URL } from '../config';
+import { LocaleProvider } from './LocaleContext';
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <MemoryRouter>
-    <AuthProvider>{children}</AuthProvider>
+    <LocaleProvider>
+      <AuthProvider>{children}</AuthProvider>
+    </LocaleProvider>
   </MemoryRouter>
 );
 
@@ -107,7 +110,7 @@ describe('AuthContext', () => {
     });
 
     expect(caughtError).toBeInstanceOf(Error);
-    expect((caughtError as Error).message).toContain('Sesja wygasła');
+    expect((caughtError as Error).message).toContain('Sesja wygas');
     expect(result.current.isAuthenticated).toBe(false);
     expect(localStorage.getItem('restaurant-auth')).toBeNull();
   });

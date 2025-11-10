@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../context/AuthContext';
+import { LocaleProvider } from '../context/LocaleContext';
 import { RequireRole } from './RequireAuth';
 
 const ManagerPage = () => <div>Manager Page</div>;
@@ -11,15 +12,17 @@ const HomePage = () => <div>Home Page</div>;
 function renderWithRoutes(initialEntry: string) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
-      <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<HomePage />} />
-          <Route element={<RequireRole roles={['manager']} />}>
-            <Route path="/manager" element={<ManagerPage />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
+      <LocaleProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<HomePage />} />
+            <Route element={<RequireRole roles={['manager']} />}>
+              <Route path="/manager" element={<ManagerPage />} />
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </LocaleProvider>
     </MemoryRouter>,
   );
 }

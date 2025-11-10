@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -261,7 +261,7 @@ const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
     } finally {
       setPreviewLoading(false);
     }
-  }, [authHeaders, dateFrom, dateTo, statusFilter, typeFilter, sortBy, timeFrom, timeTo, toServerTime]);
+  }, [authHeaders, dateFrom, dateTo, statusFilter, typeFilter, sortBy, timeFrom, timeTo, toServerTime, t]);
 
   useEffect(() => {
     fetchPreview();

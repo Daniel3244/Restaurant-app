@@ -11,6 +11,7 @@ type LocaleContextValue = {
 const LocaleContext = createContext<LocaleContextValue | undefined>(undefined);
 const STORAGE_KEY = 'restaurant-lang';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
     if (typeof window === 'undefined') return 'pl';
