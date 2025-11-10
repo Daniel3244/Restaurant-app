@@ -10,6 +10,8 @@ public class MenuItem {
 
     private String name;
     private String description;
+    private String nameEn;
+    private String descriptionEn;
     private double price;
     private String imageUrl;
     private String category;
@@ -21,6 +23,10 @@ public class MenuItem {
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getNameEn() { return nameEn; }
+    public void setNameEn(String nameEn) { this.nameEn = nameEn; }
+    public String getDescriptionEn() { return descriptionEn; }
+    public void setDescriptionEn(String descriptionEn) { this.descriptionEn = descriptionEn; }
     public double getPrice() { return price; }
     public void setPrice(double price) { this.price = price; }
     public String getImageUrl() { return imageUrl; }

@@ -1,7 +1,7 @@
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
+import { useTranslate } from './context/LocaleContext';
 
 const STATUS_DISPLAY = ['W realizacji', 'Gotowe'] as const;
 
@@ -20,6 +20,7 @@ function OrderNumbersScreen() {
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
   const etagRef = useRef<string | null>(null);
+  const t = useTranslate();
 
   const fetchOrders = useCallback(async (showSpinner = false) => {
     const shouldShowSpinner = showSpinner || !hasLoaded;
@@ -39,7 +40,7 @@ function OrderNumbersScreen() {
         }
         return;
       }
-      if (!res.ok) throw new Error('Błąd pobierania zamówień');
+      if (!res.ok) throw new Error(t('Błąd pobierania zamówień', 'Failed to fetch orders'));
       const data = await res.json() as Order[];
       const filtered = Array.isArray(data) ? data.filter((order): order is Order => isTrackedStatus(order.status)) : [];
       setOrders(filtered);
@@ -50,7 +51,7 @@ function OrderNumbersScreen() {
         etagRef.current = incomingEtag;
       }
     } catch (err: unknown) {
-      const message = err instanceof Error && err.message ? err.message : 'Wystąpił błąd';
+      const message = err instanceof Error && err.message ? err.message : t('Wystąpił błąd', 'An error occurred');
       setError(message);
       if (!hasLoaded) {
         setOrders([]);
@@ -61,7 +62,7 @@ function OrderNumbersScreen() {
         setLoading(false);
       }
     }
-  }, [hasLoaded]);
+  }, [hasLoaded, t]);
 
   useEffect(() => {
     fetchOrders(true);
@@ -69,12 +70,16 @@ function OrderNumbersScreen() {
     return () => window.clearInterval(interval);
   }, [fetchOrders]);
 
+  const statusHeading = (status: typeof STATUS_DISPLAY[number]) => (
+    status === 'W realizacji' ? t('W realizacji', 'In progress') : t('Gotowe', 'Ready')
+  );
+
   return (
     <div className="order-numbers-screen">
-  <h1>Numerki zamówień</h1>
+      <h1>{t('Numerki zamówień', 'Order numbers')}</h1>
       <div className="order-numbers-grid">
         {loading ? (
-          <p>Loading...</p>
+          <p>{t('Ładowanie...', 'Loading...')}</p>
         ) : error ? (
           <p style={{ color: '#ff3b00' }}>{error}</p>
         ) : (
@@ -82,10 +87,10 @@ function OrderNumbersScreen() {
             const statusOrders = orders.filter(o => o.status === status);
             return (
               <div key={status} className="order-numbers-col">
-                <h2>{status}</h2>
+                <h2>{statusHeading(status)}</h2>
                 <div className="order-numbers-list">
                   {statusOrders.length === 0 ? (
-                    <span className="order-numbers-empty">Brak</span>
+                    <span className="order-numbers-empty">{t('Brak', 'Empty')}</span>
                   ) : (
                     statusOrders.map(o => (
                       <div key={o.id} className="order-number-big">

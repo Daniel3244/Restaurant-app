@@ -1,19 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import '../App.css';
 import { API_BASE_URL } from '../config';
+import { useLocale, useTranslate } from '../context/LocaleContext';
 
-const categories = [
-  { id: 'napoje', name: 'Napoje' },
-  { id: 'zestawy', name: 'Zestawy' },
-  { id: 'burgery', name: 'Burgery' },
-  { id: 'wrapy', name: 'Wrapy' },
-  { id: 'dodatki', name: 'Dodatki' },
-];
+const categoryDefs = [
+  { id: 'napoje', labelPl: 'Napoje', labelEn: 'Drinks' },
+  { id: 'zestawy', labelPl: 'Zestawy', labelEn: 'Combos' },
+  { id: 'burgery', labelPl: 'Burgery', labelEn: 'Burgers' },
+  { id: 'wrapy', labelPl: 'Wrapy', labelEn: 'Wraps' },
+  { id: 'dodatki', labelPl: 'Dodatki', labelEn: 'Extras' },
+] as const;
 
 type MenuItem = {
   id: number;
   name: string;
   description: string;
+  nameEn?: string;
+  descriptionEn?: string;
   price: number;
   imageUrl: string;
   category: string;
@@ -23,6 +26,7 @@ type MenuItem = {
 type OrderItem = {
   id: number;
   name: string;
+  nameEn?: string;
   price: number;
   quantity: number;
   img: string;
@@ -63,6 +67,13 @@ function OrderingKioskView() {
   const [orderType, setOrderType] = useState<'na miejscu' | 'na wynos'>('na miejscu');
   const [orderSent, setOrderSent] = useState<{ number: number } | null>(null);
   const [sendingOrder, setSendingOrder] = useState(false);
+  const t = useTranslate();
+  const { language } = useLocale();
+
+  const categories = useMemo(() => categoryDefs.map(cat => ({
+    id: cat.id,
+    label: t(cat.labelPl, cat.labelEn),
+  })), [t]);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/menu`)
@@ -77,7 +88,14 @@ function OrderingKioskView() {
       if (found) {
         return prev.map(o => (o.id === item.id ? { ...o, quantity: o.quantity + 1 } : o));
       }
-      return [...prev, { ...item, quantity: 1, img: formatImageUrl(item.imageUrl) }];
+      return [...prev, {
+        id: item.id,
+        name: item.name,
+        nameEn: item.nameEn,
+        price: item.price,
+        quantity: 1,
+        img: formatImageUrl(item.imageUrl),
+      }];
     });
     setAddedId(item.id);
     window.setTimeout(() => setAddedId(null), 400);
@@ -124,23 +142,27 @@ function OrderingKioskView() {
     }
   };
 
+  const currencySymbol = language === 'pl' ? 'zł' : 'PLN';
+
   const renderOrderNumber = () => (
     <div className="order-number-view">
-          <h2>Dziękujemy za zamówienie!</h2>
-          <p>Twój numer zamówienia:</p>
-  <div className="order-number">{orderSent?.number}</div>
-  <button onClick={() => setOrderSent(null)}>Nowe zamówienie</button>
+      <h2>{t('Dziękujemy za zamówienie!', 'Thank you for your order!')}</h2>
+      <p>{t('Twój numer zamówienia:', 'Your order number:')}</p>
+      <div className="order-number">{orderSent?.number}</div>
+      <button type="button" onClick={() => setOrderSent(null)}>
+        {t('Nowe zamówienie', 'Place another order')}
+      </button>
     </div>
   );
 
   const renderStart = () => (
     <div className="start-view">
-      <h2>Witamy w restauracji!</h2>
+      <h2>{t('Witamy w restauracji!', 'Welcome!')}</h2>
       <div className="start-tiles">
         {categories.map(cat => (
           <div key={cat.id} className="start-tile" onClick={() => setSelectedCategory(cat.id)}>
-            <img src={`/img/${cat.id}.jpg`} alt={cat.name} />
-            <span>{cat.name}</span>
+            <img src={`/img/${cat.id}.jpg`} alt={cat.label} />
+            <span>{cat.label}</span>
           </div>
         ))}
       </div>
@@ -149,49 +171,61 @@ function OrderingKioskView() {
 
   const renderMenu = () => (
     <div className="menu-grid">
-      {menu.filter(m => m.category === selectedCategory).map(item => (
-        <div
-          key={item.id}
-          className={`menu-card${addedId === item.id ? ' added' : ''}${item.active === false ? ' inactive' : ''}`}
-          onClick={() => item.active !== false && setModalItem(item)}
-          style={{ cursor: item.active !== false ? 'pointer' : 'default' }}
-        >
-          <img src={formatImageUrl(item.imageUrl)} alt={item.name} />
-          <div className="menu-card-info">
-            <span>{item.name}</span>
-                <span className="price">{item.price} zł</span>
+      {menu.filter(m => m.category === selectedCategory).map(item => {
+        const displayName = language === 'pl' ? item.name : (item.nameEn?.trim() || item.name);
+        return (
+          <div
+            key={item.id}
+            className={`menu-card${addedId === item.id ? ' added' : ''}${item.active === false ? ' inactive' : ''}`}
+            onClick={() => item.active !== false && setModalItem(item)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && item.active !== false) {
+                setModalItem(item);
+              }
+            }}
+          >
+            <img src={formatImageUrl(item.imageUrl)} alt={displayName} />
+            <div className="menu-card-info">
+              <span>{displayName}</span>
+              <span className="price">{item.price} {currencySymbol}</span>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
   const renderMenuModal = () => {
     if (!modalItem) return null;
+    const displayName = language === 'pl' ? modalItem.name : (modalItem.nameEn?.trim() || modalItem.name);
+    const displayDescription = language === 'pl' ? modalItem.description : (modalItem.descriptionEn?.trim() || modalItem.description);
     return (
       <div className="menu-modal-overlay" onClick={() => setModalItem(null)}>
         <div className="menu-modal" onClick={e => e.stopPropagation()}>
           <img
             className="menu-modal-img"
             src={formatImageUrl(modalItem.imageUrl)}
-            alt={modalItem.name}
+            alt={displayName}
           />
           <div className="menu-modal-info">
-            <h2>{modalItem.name}</h2>
-                <div className="menu-modal-price">{modalItem.price} zł</div>
-            <div className="menu-modal-desc">{modalItem.description}</div>
+            <h2>{displayName}</h2>
+            <div className="menu-modal-price">{modalItem.price} {currencySymbol}</div>
+            <div className="menu-modal-desc">{displayDescription}</div>
             <div className="menu-modal-actions">
               <button
+                type="button"
                 className="menu-modal-add"
                 onClick={() => {
                   addToOrder(modalItem);
                   setModalItem(null);
                 }}
               >
-                Dodaj do koszyka
+                {t('Dodaj do koszyka', 'Add to cart')}
               </button>
-              <button className="menu-modal-cancel" onClick={() => setModalItem(null)}>
-                    Wróć
+              <button type="button" className="menu-modal-cancel" onClick={() => setModalItem(null)}>
+                {t('Wróć', 'Back')}
               </button>
             </div>
           </div>
@@ -202,25 +236,32 @@ function OrderingKioskView() {
 
   const renderSummary = () => (
     <div className="summary">
-  <h2>Podsumowanie zamówienia</h2>
+      <h2>{t('Podsumowanie zamówienia', 'Order summary')}</h2>
       {order.length === 0 ? (
-        <p>Brak pozycji.</p>
+        <p>{t('Brak pozycji.', 'No items added yet.')}</p>
       ) : (
         <ul>
-          {order.map(item => (
-            <li key={item.id}>
-              <img src={item.img} alt={item.name} />
-              <span className="item-name">{item.name}</span>
-              <span className="item-qty">x {item.quantity}</span>
-                <span className="item-sum">({item.price * item.quantity} zł)</span>
-              <button onClick={() => removeFromOrder(item.id)}>Usuń</button>
-            </li>
-          ))}
+          {order.map(item => {
+            const displayName = language === 'pl' ? item.name : (item.nameEn?.trim() || item.name);
+            return (
+              <li key={item.id}>
+                <img src={item.img} alt={displayName} />
+                <span className="item-name">{displayName}</span>
+                <span className="item-qty">x {item.quantity}</span>
+                <span className="item-sum">({item.price * item.quantity} {currencySymbol})</span>
+                <button type="button" onClick={() => removeFromOrder(item.id)}>
+                  {t('Usuń', 'Remove')}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
       <div className="summary-bottom">
         <strong>
-            Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zł
+          {language === 'pl'
+            ? `Suma: ${order.reduce((sum, item) => sum + item.price * item.quantity, 0)} ${currencySymbol}`
+            : `Total: ${order.reduce((sum, item) => sum + item.price * item.quantity, 0)} ${currencySymbol}`}
         </strong>
         <div className="order-type-graphics">
           <div
@@ -228,36 +269,37 @@ function OrderingKioskView() {
             onClick={() => setOrderType('na miejscu')}
             tabIndex={0}
             role="button"
-            aria-label="Na miejscu"
+            aria-label={t('Na miejscu', 'Eat in')}
           >
-            <img src="/img/eat-here.jpg" alt="Na miejscu" />
-            <span>Na miejscu</span>
+            <img src="/img/eat-here.jpg" alt={t('Na miejscu', 'Eat in')} />
+            <span>{t('Na miejscu', 'Eat in')}</span>
           </div>
           <div
             className={`order-type-option${orderType === 'na wynos' ? ' selected' : ''}`}
             onClick={() => setOrderType('na wynos')}
             tabIndex={0}
             role="button"
-            aria-label="Na wynos"
+            aria-label={t('Na wynos', 'Take away')}
           >
-            <img src="/img/to-go.jpg" alt="Na wynos" />
-            <span>Na wynos</span>
+            <img src="/img/to-go.jpg" alt={t('Na wynos', 'Take away')} />
+            <span>{t('Na wynos', 'Take away')}</span>
           </div>
         </div>
-          <button disabled={order.length === 0 || sendingOrder} onClick={sendOrder} style={{ minWidth: 180 }}>
-            {sendingOrder ? 'Wysyłanie...' : 'Potwierdź zamówienie'}
+        <button type="button" disabled={order.length === 0 || sendingOrder} onClick={sendOrder} style={{ minWidth: 180 }}>
+          {sendingOrder ? t('Wysyłanie...', 'Sending...') : t('Potwierdź zamówienie', 'Confirm order')}
         </button>
-          <button onClick={() => setShowSummary(false)}>Wróć</button>
-          <button className="cancel-btn" onClick={() => setShowCancelConfirm(true)}>
-          Anuluj zamówienie
+        <button type="button" onClick={() => setShowSummary(false)}>{t('Wróć', 'Back')}</button>
+        <button type="button" className="cancel-btn" onClick={() => setShowCancelConfirm(true)}>
+          {t('Anuluj zamówienie', 'Cancel order')}
         </button>
       </div>
       {showCancelConfirm && (
         <div className="cancel-confirm-modal">
           <div className="cancel-confirm-content">
-              <p>Czy na pewno chcesz anulować zamówienie?</p>
+            <p>{t('Czy na pewno chcesz anulować zamówienie?', 'Are you sure you want to cancel the order?')}</p>
             <div className="cancel-confirm-actions">
               <button
+                type="button"
                 onClick={() => {
                   setOrder([]);
                   setShowSummary(false);
@@ -265,9 +307,11 @@ function OrderingKioskView() {
                   setShowCancelConfirm(false);
                 }}
               >
-                Tak, anuluj
+                {t('Tak, anuluj', 'Yes, cancel')}
               </button>
-              <button onClick={() => setShowCancelConfirm(false)}>Nie</button>
+              <button type="button" onClick={() => setShowCancelConfirm(false)}>
+                {t('Nie', 'No')}
+              </button>
             </div>
           </div>
         </div>
@@ -281,12 +325,12 @@ function OrderingKioskView() {
         <aside className="sidebar">
           <img
             src="/img/logo.jpg"
-            alt="Logo"
+            alt={t('Logo', 'Logo')}
             className="sidebar-logo"
             onClick={handleLogoClick}
             style={{ cursor: 'pointer' }}
           />
-          <h3>Kategorie</h3>
+          <h3>{t('Kategorie', 'Categories')}</h3>
           <ul>
             {categories.map(cat => {
               const catCount = order
@@ -294,7 +338,7 @@ function OrderingKioskView() {
                 .reduce((sum, o) => sum + o.quantity, 0);
               return (
                 <li key={cat.id} className={selectedCategory === cat.id ? 'active' : ''}>
-                  <button onClick={() => setSelectedCategory(cat.id)}>{cat.name}</button>
+                  <button type="button" onClick={() => setSelectedCategory(cat.id)}>{cat.label}</button>
                   {catCount > 0 && <span className="cat-count">{catCount}</span>}
                 </li>
               );
@@ -316,10 +360,12 @@ function OrderingKioskView() {
         {!showSummary && !orderSent && (
           <div className="order-bar">
             <span className="total-amount">
-              Suma: {order.reduce((sum, item) => sum + item.price * item.quantity, 0)} zł
+              {language === 'pl'
+                ? `Suma: ${order.reduce((sum, item) => sum + item.price * item.quantity, 0)} ${currencySymbol}`
+                : `Total: ${order.reduce((sum, item) => sum + item.price * item.quantity, 0)} ${currencySymbol}`}
             </span>
-            <button onClick={() => setShowSummary(true)} disabled={order.length === 0}>
-              Przejdź do podsumowania ({order.reduce((sum, item) => sum + item.quantity, 0)})
+            <button type="button" onClick={() => setShowSummary(true)} disabled={order.length === 0}>
+              {t('Przejdź do podsumowania', 'Go to summary')} ({order.reduce((sum, item) => sum + item.quantity, 0)})
             </button>
           </div>
         )}
@@ -329,4 +375,3 @@ function OrderingKioskView() {
 }
 
 export default OrderingKioskView;
-

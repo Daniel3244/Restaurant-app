@@ -1,13 +1,13 @@
-
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { useTranslate } from './context/LocaleContext';
 
 type Role = 'manager' | 'employee';
 
 const quickCredentials = [
-  { role: 'manager', label: 'Wypełnij dane menedżera', username: 'manager', password: 'manager123' },
-  { role: 'employee', label: 'Wypełnij dane pracownika', username: 'employee', password: 'employee123' },
+  { role: 'manager', labelPl: 'Wypełnij dane menedżera', labelEn: 'Fill manager credentials', username: 'manager', password: 'manager123' },
+  { role: 'employee', labelPl: 'Wypełnij dane pracownika', labelEn: 'Fill employee credentials', username: 'employee', password: 'employee123' },
 ] as const;
 
 const LoginView: React.FC = () => {
@@ -18,6 +18,7 @@ const LoginView: React.FC = () => {
   const auth = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const t = useTranslate();
 
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const next = searchParams.get('next') || '/';
@@ -56,13 +57,13 @@ const LoginView: React.FC = () => {
     try {
       const role = await auth.login(username.trim(), password);
       if (allowedRoles.length > 0 && !allowedRoles.includes(role as Role)) {
-        setError('Brak uprawnień do tej sekcji.');
+        setError(t('Brak uprawnień do tej sekcji.', 'You are not allowed to access this section.'));
         await auth.logout();
         return;
       }
       navigate(next, { replace: true });
     } catch (err: unknown) {
-      const message = err instanceof Error && err.message ? err.message : 'Błąd logowania. Spróbuj ponownie.';
+      const message = err instanceof Error && err.message ? err.message : t('Błąd logowania. Spróbuj ponownie.', 'Login failed. Please try again.');
       setError(message);
     } finally {
       setLoading(false);
@@ -72,15 +73,15 @@ const LoginView: React.FC = () => {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h2>Logowanie</h2>
+        <h2>{t('Logowanie', 'Sign in')}</h2>
         {allowedRoles.length > 0 && (
           <p className="login-hint">
-            Wymagane role: <strong>{allowedRoles.join(', ')}</strong>
+            {t('Wymagane role:', 'Required roles:')} <strong>{allowedRoles.join(', ')}</strong>
           </p>
         )}
         <form className="login-form" onSubmit={handleSubmit} noValidate>
           <label>
-            <span>Login</span>
+            <span>{t('Login', 'Username')}</span>
             <input
               type="text"
               autoComplete="username"
@@ -90,7 +91,7 @@ const LoginView: React.FC = () => {
             />
           </label>
           <label>
-            <span>Hasło</span>
+            <span>{t('Hasło', 'Password')}</span>
             <input
               type="password"
               autoComplete="current-password"
@@ -101,11 +102,11 @@ const LoginView: React.FC = () => {
           </label>
           {error && <div className="login-error" role="alert">{error}</div>}
           <button type="submit" disabled={loading || !username || !password}>
-            {loading ? 'Logowanie...' : 'Zaloguj się'}
+            {loading ? t('Logowanie...', 'Signing in...') : t('Zaloguj się', 'Sign in')}
           </button>
         </form>
         <div className="login-helpers">
-          <span>Potrzebujesz testowych danych?</span>
+          <span>{t('Potrzebujesz testowych danych?', 'Need sample credentials?')}</span>
           <div className="login-quick-buttons">
             {(allowedRoles.length ? quickCredentials.filter(cred => allowedRoles.includes(cred.role)) : quickCredentials)
               .map(cred => (
@@ -119,11 +120,11 @@ const LoginView: React.FC = () => {
                     setError('');
                   }}
                 >
-                  {cred.label}
+                  {t(cred.labelPl, cred.labelEn)}
                 </button>
               ))}
           </div>
-          <small>Zalogowanie wypełnia formularz, ale nadal wymaga zatwierdzenia przyciskiem.</small>
+          <small>{t('Zalogowanie wypełnia formularz, ale nadal wymaga zatwierdzenia przyciskiem.', 'Using the shortcut fills the form but still requires confirmation with the button.')}</small>
         </div>
       </div>
     </div>

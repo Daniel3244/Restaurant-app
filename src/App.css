@@ -63,6 +63,43 @@ html, body {
   margin: 0 auto;
   padding: 0 clamp(0.5rem, 2vw, 1.5rem) 2rem;
 }
+
+.language-switcher {
+  position: fixed;
+  bottom: 24px;
+  right: clamp(16px, 3vw, 40px);
+  display: flex;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.language-switcher button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #444;
+  transition: background 0.2s, color 0.2s;
+}
+
+.language-switcher button.active {
+  background: rgba(255, 145, 0, 0.15);
+  color: #ff9100;
+}
+
+.language-switcher button span:first-child {
+  font-size: 1.1rem;
+}
 .landing-view {
   max-width: 1200px;
   margin: 0 auto;

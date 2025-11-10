@@ -10,6 +10,7 @@ public class OrderItem {
 
     private Long menuItemId;
     private String name;
+    private String nameEn;
     private int quantity;
     private double price;
 
@@ -19,6 +20,8 @@ public class OrderItem {
     public void setMenuItemId(Long menuItemId) { this.menuItemId = menuItemId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getNameEn() { return nameEn; }
+    public void setNameEn(String nameEn) { this.nameEn = nameEn; }
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
     public double getPrice() { return price; }

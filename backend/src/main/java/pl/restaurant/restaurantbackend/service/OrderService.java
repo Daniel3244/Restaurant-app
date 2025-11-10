@@ -127,6 +127,7 @@ public class OrderService {
             OrderItem orderItem = new OrderItem();
             orderItem.setMenuItemId(menuItem.getId());
             orderItem.setName(menuItem.getName());
+            orderItem.setNameEn(menuItem.getNameEn());
             orderItem.setPrice(menuItem.getPrice());
             orderItem.setQuantity(quantity);
             orderItems.add(orderItem);

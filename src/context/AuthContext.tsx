@@ -1,6 +1,7 @@
 ﻿import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
+import { useTranslate } from './LocaleContext';
 
 type Role = 'manager' | 'employee';
 
@@ -20,7 +21,6 @@ type AuthContextValue = {
 };
 
 const STORAGE_KEY = 'restaurant-auth';
-const SESSION_EXPIRED_MESSAGE = 'Sesja wygasła. Zaloguj się ponownie.';
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 function loadInitialState(): AuthState | null {
@@ -53,10 +53,12 @@ function hasAuthorizationHeader(headers?: HeadersInit): boolean {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState | null>(loadInitialState);
   const navigate = useNavigate();
+  const t = useTranslate();
   const autoLogoutRef = useRef(false);
   const originalFetchRef = useRef<typeof fetch | null>(null);
+  const sessionExpiredMessage = t('Sesja wygasła. Zaloguj się ponownie.', 'Session expired. Please sign in again.');
 
-  const handleAutoLogout = useCallback((message: string = SESSION_EXPIRED_MESSAGE) => {
+  const handleAutoLogout = useCallback((message: string = sessionExpiredMessage) => {
     if (autoLogoutRef.current) return;
     autoLogoutRef.current = true;
     setState(null);
@@ -66,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => {
       autoLogoutRef.current = false;
     }, 0);
-  }, [navigate]);
+  }, [navigate, sessionExpiredMessage]);
 
   useEffect(() => {
     if (state) {
@@ -126,9 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!res.ok) {
       if (res.status === 401) {
-        throw new Error('Nieprawidłowy login lub hasło.');
+        throw new Error(t('Nieprawidłowy login lub hasło.', 'Incorrect username or password.'));
       }
-      throw new Error('Nie udało się zalogować. Spróbuj ponownie.');
+      throw new Error(t('Nie udało się zalogować. Spróbuj ponownie.', 'Could not sign in. Please try again.'));
     }
 
     const data = await res.json() as { token: string; role: Role; expiresAt: number };
@@ -152,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state?.token]);
   const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
     if (!state?.token) {
-      throw new Error('Brak aktywnej sesji');
+      throw new Error(t('Brak aktywnej sesji', 'No active session'));
     }
     const res = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
       method: 'POST',
@@ -167,13 +169,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     if (res.status === 400) {
       const data = await res.json().catch(() => null) as { message?: string } | null;
-      throw new Error(data?.message ?? 'Nie udało się zmienić hasła');
+      throw new Error(data?.message ?? t('Nie udało się zmienić hasła', 'Could not change password'));
     }
     if (res.status === 401) {
       handleAutoLogout();
-      throw new Error('Sesja wygasła. Zaloguj się ponownie.');
+      throw new Error(sessionExpiredMessage);
     }
-    throw new Error('Nie udało się zmienić hasła. Spróbuj ponownie.');
+    throw new Error(t('Nie udało się zmienić hasła. Spróbuj ponownie.', 'Could not change password. Please try again.'));
   }, [state, handleAutoLogout]);
 
   const value = useMemo<AuthContextValue>(() => ({

@@ -1,9 +1,11 @@
-﻿import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslate } from '../context/LocaleContext';
 import '../App.css';
 
 function ManagerLayout() {
   const auth = useAuth();
+  const t = useTranslate();
 
   const handleLogout = async () => {
     await auth.logout();
@@ -14,23 +16,23 @@ function ManagerLayout() {
       <nav className="manager-nav">
         <div className="manager-nav-header">
           <div className="manager-nav-title">
-            <span>Panel menedżera</span>
-            <small>{auth.role ? `Rola: ${auth.role}` : 'Brak roli'}</small>
+            <span>{t('Panel menedżera', 'Manager panel')}</span>
+            <small>{auth.role ? t(`Rola: ${auth.role}`, `Role: ${auth.role}`) : t('Brak roli', 'No role')}</small>
           </div>
           <div className="manager-nav-actions">
-            <Link to="/" className="manager-nav-back">Powrót</Link>
-            <button className="manager-logout-btn" onClick={handleLogout}>Wyloguj</button>
+            <Link to="/" className="manager-nav-back">{t('Powrót', 'Back')}</Link>
+            <button className="manager-logout-btn" onClick={handleLogout}>{t('Wyloguj', 'Sign out')}</button>
           </div>
         </div>
         <div className="manager-nav-links">
           <NavLink to="menu" className={({ isActive }) => (isActive ? 'manager-nav-link active' : 'manager-nav-link')}>
-            Edycja menu
+            {t('Edycja menu', 'Menu management')}
           </NavLink>
           <NavLink to="orders" className={({ isActive }) => (isActive ? 'manager-nav-link active' : 'manager-nav-link')}>
-            Zamówienia
+            {t('Zamówienia', 'Orders')}
           </NavLink>
           <NavLink to="reports" className={({ isActive }) => (isActive ? 'manager-nav-link active' : 'manager-nav-link')}>
-            Raporty
+            {t('Raporty', 'Reports')}
           </NavLink>
         </div>
       </nav>

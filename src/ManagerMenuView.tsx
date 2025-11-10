@@ -3,11 +3,14 @@ import type { ChangeEvent, FormEvent } from 'react';
 import './App.css';
 import { API_BASE_URL } from './config';
 import { useAuth } from './context/AuthContext';
+import { useLocale, useTranslate } from './context/LocaleContext';
 
 export type MenuItem = {
   id?: number;
   name: string;
   description: string;
+  nameEn?: string | null;
+  descriptionEn?: string | null;
   price: number;
   imageUrl: string;
   category: string;
@@ -16,13 +19,13 @@ export type MenuItem = {
 
 const API_URL = `${API_BASE_URL}/api/manager/menu`;
 const UPLOAD_URL = `${API_BASE_URL}/api/manager/menu/upload`;
-const CATEGORIES = [
-  { id: 'napoje', name: 'Napoje' },
-  { id: 'zestawy', name: 'Zestawy' },
-  { id: 'burgery', name: 'Burgery' },
-  { id: 'wrapy', name: 'Wrapy' },
-  { id: 'dodatki', name: 'Dodatki' },
-];
+const CATEGORY_DEFS = [
+  { id: 'napoje', labelPl: 'Napoje', labelEn: 'Drinks' },
+  { id: 'zestawy', labelPl: 'Zestawy', labelEn: 'Combos' },
+  { id: 'burgery', labelPl: 'Burgery', labelEn: 'Burgers' },
+  { id: 'wrapy', labelPl: 'Wrapy', labelEn: 'Wraps' },
+  { id: 'dodatki', labelPl: 'Dodatki', labelEn: 'Extras' },
+] as const;
 
 type UploadResponse = {
   url?: string;
@@ -32,12 +35,14 @@ type UploadResponse = {
 
 const ManagerMenuView: React.FC = () => {
   const [menu, setMenu] = useState<MenuItem[]>([]);
-  const [form, setForm] = useState<Omit<MenuItem, 'imageUrl'> & { imageFile: File | null }>({
+  const [form, setForm] = useState<Omit<MenuItem, 'imageUrl'> & { imageFile: File | null; nameEn: string; descriptionEn: string }>({
     name: '',
     description: '',
     price: 0,
     imageFile: null,
     category: '',
+    nameEn: '',
+    descriptionEn: '',
   });
   const [editId, setEditId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,6 +54,13 @@ const ManagerMenuView: React.FC = () => {
   const auth = useAuth();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [lastLoaded, setLastLoaded] = useState<number | null>(null);
+  const { language } = useLocale();
+  const t = useTranslate();
+
+  const categories = useMemo(() => CATEGORY_DEFS.map(cat => ({
+    id: cat.id,
+    label: t(cat.labelPl, cat.labelEn),
+  })), [t]);
 
   const authHeaders = useMemo(() => {
     const headers: Record<string, string> = {};
@@ -62,18 +74,18 @@ const ManagerMenuView: React.FC = () => {
     setLoading(true);
     try {
       const res = await fetch(API_URL, { headers: authHeaders });
-      if (!res.ok) throw new Error('Nie udało się pobrać menu.');
+      if (!res.ok) throw new Error(t('Nie udało się pobrać menu.', 'Failed to fetch menu.'));
       const data = (await res.json()) as MenuItem[];
       setMenu(data);
       setLastLoaded(Date.now());
       setError(null);
     } catch (err: unknown) {
-      const message = err instanceof Error && err.message ? err.message : 'Nieznany błąd';
+      const message = err instanceof Error && err.message ? err.message : t('Nieznany błąd', 'Unknown error');
       setError(message);
     } finally {
       setLoading(false);
     }
-  }, [authHeaders]);
+  }, [authHeaders, t]);
 
   useEffect(() => {
     fetchMenu();
@@ -102,13 +114,13 @@ const ManagerMenuView: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (!form.category) {
-      setError('Wybierz kategorię przed dodaniem pozycji.');
+      setError(t('Wybierz kategorię przed dodaniem pozycji.', 'Select a category before adding an item.'));
       return;
     }
 
     let imageUrl = '';
     if (!editId && !form.imageFile) {
-      setError('Wybierz plik JPG przed dodaniem pozycji.');
+      setError(t('Wybierz plik JPG przed dodaniem pozycji.', 'Select a JPG image before adding an item.'));
       return;
     }
 
@@ -124,16 +136,16 @@ const ManagerMenuView: React.FC = () => {
         });
         const payload = await res.json().catch(() => null) as UploadResponse | null;
         if (!res.ok || !payload?.url) {
-          const message = payload?.error ?? (res.status === 415 ? 'Niepoprawny typ pliku' : 'Nie udało się zapisać obrazka.');
-          setError('Błąd przesyłania pliku: ' + message);
+          const message = payload?.error ?? (res.status === 415 ? t('Niepoprawny typ pliku', 'Unsupported file type') : t('Nie udało się zapisać obrazka.', 'Could not save image.'));
+          setError(t('Błąd przesyłania pliku:', 'File upload error: ') + message);
           setFeedback({ type: 'error', message });
           return;
         }
         imageUrl = payload.url;
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Nieznany błąd';
-        setError('Błąd przesyłania pliku: ' + message);
-        setFeedback({ type: 'error', message: 'Nie udało się zapisać obrazka.' });
+        const message = err instanceof Error ? err.message : t('Nieznany błąd', 'Unknown error');
+        setError(t('Błąd przesyłania pliku:', 'File upload error: ') + message);
+        setFeedback({ type: 'error', message: t('Nie udało się zapisać obrazka.', 'Could not save image.') });
         return;
       } finally {
         setUploading(false);
@@ -143,41 +155,43 @@ const ManagerMenuView: React.FC = () => {
     const payload = {
       name: form.name,
       description: form.description,
+      nameEn: form.nameEn?.trim() ? form.nameEn.trim() : null,
+      descriptionEn: form.descriptionEn?.trim() ? form.descriptionEn.trim() : null,
       price: form.price,
       imageUrl: imageUrl || (editId ? menu.find(m => m.id === editId)?.imageUrl || '' : ''),
       category: form.category,
     };
 
     if (!payload.imageUrl) {
-      setError('Nie udało się ustalić ścieżki do obrazka.');
+      setError(t('Nie udało się ustalić ścieżki do obrazka.', 'Could not determine image path.'));
       return;
     }
 
-      const requestInit: RequestInit = {
-        method: editId ? 'PUT' : 'POST',
-        headers: { ...authHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      };
+    const requestInit: RequestInit = {
+      method: editId ? 'PUT' : 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    };
 
-      const url = editId ? `${API_URL}/${editId}` : API_URL;
-      const response = await fetch(url, requestInit);
-      if (!response.ok) {
-        const errorPayload = await response.json().catch(() => null) as { message?: string } | null;
-        const message = errorPayload?.message ?? 'Nie udało się zapisać pozycji.';
-        setError(message);
-        setFeedback({ type: 'error', message });
-        return;
-      }
+    const url = editId ? `${API_URL}/${editId}` : API_URL;
+    const response = await fetch(url, requestInit);
+    if (!response.ok) {
+      const errorPayload = await response.json().catch(() => null) as { message?: string } | null;
+      const message = errorPayload?.message ?? t('Nie udało się zapisać pozycji.', 'Could not save menu item.');
+      setError(message);
+      setFeedback({ type: 'error', message });
+      return;
+    }
 
-      setForm({ name: '', description: '', price: 0, imageFile: null, category: '' });
-      setEditId(null);
-      setPreview(null);
+    setForm({ name: '', description: '', price: 0, imageFile: null, category: '', nameEn: '', descriptionEn: '' });
+    setEditId(null);
+    setPreview(null);
     const input = fileInputRef.current;
     if (input) {
       input.value = '';
     }
     fetchMenu();
-    setFeedback({ type: 'success', message: editId ? 'Zmiany zapisane.' : 'Dodano nową pozycję.' });
+    setFeedback({ type: 'success', message: editId ? t('Zmiany zapisane.', 'Changes saved.') : t('Dodano nową pozycję.', 'Menu item added.') });
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -187,18 +201,20 @@ const ManagerMenuView: React.FC = () => {
       price: item.price,
       imageFile: null,
       category: item.category,
+      nameEn: item.nameEn ?? '',
+      descriptionEn: item.descriptionEn ?? '',
     });
     setEditId(item.id!);
     setPreview(item.imageUrl?.startsWith('/uploads/') ? `${API_BASE_URL}${item.imageUrl}` : item.imageUrl);
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Usunąć tę pozycję z menu?')) {
+    if (!window.confirm(t('Usunąć tę pozycję z menu?', 'Remove this menu item?'))) {
       return;
     }
     await fetch(`${API_URL}/${id}`, { method: 'DELETE', headers: authHeaders });
     fetchMenu();
-    setFeedback({ type: 'success', message: 'Pozycja została usunięta.' });
+    setFeedback({ type: 'success', message: t('Pozycja została usunięta.', 'Menu item removed.') });
   };
 
   const toggleActive = async (item: MenuItem) => {
@@ -206,7 +222,7 @@ const ManagerMenuView: React.FC = () => {
     fetchMenu();
     setFeedback({
       type: 'success',
-      message: item.active ? 'Pozycja ukryta w menu.' : 'Pozycja ponownie widoczna.',
+      message: item.active ? t('Pozycja ukryta w menu.', 'Item hidden from menu.') : t('Pozycja ponownie widoczna.', 'Item visible again.'),
     });
   };
 
@@ -229,51 +245,62 @@ const ManagerMenuView: React.FC = () => {
     };
   }, [menu]);
 
+  const categoryLabel = (id: string) => categories.find(cat => cat.id === id)?.label || id;
+  const currencySymbol = language === 'pl' ? 'zł' : 'PLN';
+
   return (
     <div className="manager-view">
       <div className="manager-view-header manager-view-header--wrap">
-        <h2>Zarządzanie menu</h2>
+        <h2>{t('Zarządzanie menu', 'Menu management')}</h2>
       </div>
 
       <form className="manager-form" onSubmit={handleSubmit}>
         <div className="manager-form-row">
           <label>
-            Nazwa
+            {t('Nazwa (PL)', 'Name (PL)')}
             <input type="text" name="name" value={form.name} onChange={handleChange} required />
           </label>
           <label>
-            Kategoria
+            {t('Nazwa (EN)', 'Name (EN)')}
+            <input type="text" name="nameEn" value={form.nameEn} onChange={handleChange} placeholder={t('Opcjonalnie', 'Optional')} />
+          </label>
+          <label>
+            {t('Kategoria', 'Category')}
             <select name="category" value={form.category} onChange={handleChange} required>
-              <option value="">Wybierz...</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              <option value="">{t('Wybierz...', 'Select...')}</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.label}</option>
               ))}
             </select>
           </label>
           <label>
-            Cena (zł)
+            {t('Cena', 'Price')} ({currencySymbol})
             <input type="number" name="price" value={form.price} min={0} step={0.01} onChange={handleChange} required />
           </label>
         </div>
 
         <label>
-          Opis
+          {t('Opis (PL)', 'Description (PL)')}
           <textarea name="description" value={form.description} onChange={handleChange} rows={3} />
+        </label>
+        <label>
+          {t('Opis (EN)', 'Description (EN)')}
+          <textarea name="descriptionEn" value={form.descriptionEn} onChange={handleChange} rows={3} placeholder={t('Opcjonalnie', 'Optional')} />
         </label>
 
         <div className="manager-form-row">
           <label>
-            Obrazek (JPG)
+            {t('Obrazek (JPG)', 'Image (JPG)')}
             <input type="file" accept=".jpg,.jpeg" onChange={handleFileChange} ref={fileInputRef} />
           </label>
           {preview && (
-            <img src={preview} alt="Podgląd" className="manager-img-thumb" style={{ alignSelf: 'flex-end' }} />
+            <img src={preview} alt={t('Podgląd', 'Preview')} className="manager-img-thumb" style={{ alignSelf: 'flex-end' }} />
           )}
         </div>
 
         <div className="manager-form-row">
           <button type="submit" disabled={uploading} className="manager-save-btn">
-            {editId ? 'Zapisz zmiany' : 'Dodaj pozycję'}
+            {editId ? t('Zapisz zmiany', 'Save changes') : t('Dodaj pozycję', 'Add item')}
           </button>
           {editId && (
             <button
@@ -281,7 +308,7 @@ const ManagerMenuView: React.FC = () => {
               className="manager-cancel-btn"
               onClick={() => {
                 setEditId(null);
-                setForm({ name: '', description: '', price: 0, imageFile: null, category: '' });
+                setForm({ name: '', description: '', price: 0, imageFile: null, category: '', nameEn: '', descriptionEn: '' });
                 setPreview(null);
                 const input = fileInputRef.current;
                 if (input) {
@@ -289,7 +316,7 @@ const ManagerMenuView: React.FC = () => {
                 }
               }}
             >
-              Anuluj edycję
+              {t('Anuluj edycję', 'Cancel edit')}
             </button>
           )}
         </div>
@@ -305,20 +332,20 @@ const ManagerMenuView: React.FC = () => {
 
       <div className="manager-summary-grid">
         <div className="manager-summary-card">
-          <span className="manager-summary-title">Pozycje w menu</span>
+          <span className="manager-summary-title">{t('Pozycje w menu', 'Items in menu')}</span>
           <strong>{summary.total}</strong>
         </div>
         <div className="manager-summary-card">
-          <span className="manager-summary-title">Aktywne</span>
+          <span className="manager-summary-title">{t('Aktywne', 'Active')}</span>
           <strong>{summary.active}</strong>
         </div>
         <div className="manager-summary-card">
-          <span className="manager-summary-title">Nieaktywne</span>
+          <span className="manager-summary-title">{t('Nieaktywne', 'Inactive')}</span>
           <strong>{summary.inactive}</strong>
         </div>
         <div className="manager-summary-card">
-          <span className="manager-summary-title">Ostatnie pobranie</span>
-          <strong>{lastLoaded ? new Date(lastLoaded).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '---'}</strong>
+          <span className="manager-summary-title">{t('Ostatnie pobranie', 'Last fetched')}</span>
+          <strong>{lastLoaded ? new Date(lastLoaded).toLocaleTimeString(language === 'pl' ? 'pl-PL' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '---'}</strong>
         </div>
       </div>
 
@@ -327,67 +354,67 @@ const ManagerMenuView: React.FC = () => {
           <thead>
             <tr>
               <th>
-                Nazwa
+                {t('Nazwa', 'Name')}
                 <br />
                 <input
                   type="text"
-                  placeholder="Filtruj..."
+                  placeholder={t('Filtruj...', 'Filter...')}
                   value={filter.name}
                   onChange={e => setFilter(f => ({ ...f, name: e.target.value }))}
                   style={{ width: '90%', fontSize: '0.95rem', marginTop: 4 }}
                 />
               </th>
               <th>
-                Kategoria
+                {t('Kategoria', 'Category')}
                 <br />
                 <select
                   value={filter.category}
                   onChange={e => setFilter(f => ({ ...f, category: e.target.value }))}
                   style={{ width: '90%', fontSize: '0.95rem', marginTop: 4 }}
                 >
-                  <option value="">Wszystkie</option>
-                  {CATEGORIES.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  <option value="">{t('Wszystkie', 'All')}</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.label}</option>
                   ))}
                 </select>
               </th>
               <th>
-                Cena
+                {t('Cena', 'Price')}
                 <br />
                 <input
                   type="number"
-                  placeholder="Filtruj..."
+                  placeholder={t('Filtruj...', 'Filter...')}
                   value={filter.price}
                   onChange={e => setFilter(f => ({ ...f, price: e.target.value }))}
                   style={{ width: '90%', fontSize: '0.95rem', marginTop: 4 }}
                 />
               </th>
               <th>
-                Opis
+                {t('Opis', 'Description')}
                 <br />
                 <input
                   type="text"
-                  placeholder="Filtruj..."
+                  placeholder={t('Filtruj...', 'Filter...')}
                   value={filter.description}
                   onChange={e => setFilter(f => ({ ...f, description: e.target.value }))}
                   style={{ width: '90%', fontSize: '0.95rem', marginTop: 4 }}
                 />
               </th>
-              <th>Obrazek</th>
-              <th>Akcje</th>
+              <th>{t('Obrazek', 'Image')}</th>
+              <th>{t('Akcje', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center' }}>Loading...</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center' }}>{t('Ładowanie...', 'Loading...')}</td></tr>
             ) : filteredMenu.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: 'center' }}>Brak pozycji</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center' }}>{t('Brak pozycji', 'No items')}</td></tr>
             ) : (
               filteredMenu.map(item => (
                 <tr key={item.id}>
                   <td>{item.name}</td>
-                  <td>{CATEGORIES.find(c => c.id === item.category)?.name || item.category}</td>
-                  <td>{item.price.toFixed(2)} zł</td>
+                  <td>{categoryLabel(item.category)}</td>
+                  <td>{item.price.toFixed(2)} {currencySymbol}</td>
                   <td>{item.description}</td>
                   <td>
                     {item.imageUrl && (
@@ -403,15 +430,15 @@ const ManagerMenuView: React.FC = () => {
                     )}
                   </td>
                   <td>
-                    <button className="manager-edit-btn" onClick={() => handleEdit(item)}>Edytuj</button>
+                    <button className="manager-edit-btn" onClick={() => handleEdit(item)}>{t('Edytuj', 'Edit')}</button>
                     <button className="manager-delete-btn" onClick={() => handleDelete(item.id!)}>
-                      Usuń
+                      {t('Usuń', 'Delete')}
                     </button>
                     <button
                       className={item.active ? 'manager-toggle-btn manager-toggle-on' : 'manager-toggle-btn manager-toggle-off'}
                       onClick={() => toggleActive(item)}
                     >
-                      {item.active ? 'Dezaktywuj' : 'Aktywuj'}
+                      {item.active ? t('Dezaktywuj', 'Deactivate') : t('Aktywuj', 'Activate')}
                     </button>
                   </td>
                 </tr>
@@ -425,6 +452,3 @@ const ManagerMenuView: React.FC = () => {
 };
 
 export default ManagerMenuView;
-
-
-

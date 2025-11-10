@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { pl } from 'date-fns/locale';
 import { API_BASE_URL } from './config';
 import { useAuth } from './context/AuthContext';
+import { useLocale, useTranslate } from './context/LocaleContext';
 
 const STATUS_OPTIONS = ['W realizacji', 'Gotowe', 'Zrealizowane', 'Anulowane'] as const;
 const TYPE_OPTIONS = ['na miejscu', 'na wynos'] as const;
@@ -18,7 +19,7 @@ type OrderPreview = {
   finishedAt?: string | null;
   type: string;
   status: string;
-  items: { id: number; name: string; quantity: number; price: number }[];
+  items: { id: number; name: string; nameEn?: string | null; quantity: number; price: number }[];
 };
 
 type OrdersResponse = {
@@ -28,6 +29,20 @@ type OrdersResponse = {
   page: number;
   size: number;
 };
+
+const getStatusLabel = (status: string, t: ReturnType<typeof useTranslate>) => {
+  switch (status) {
+    case 'W realizacji': return t('W realizacji', 'In progress');
+    case 'Gotowe': return t('Gotowe', 'Ready');
+    case 'Zrealizowane': return t('Zrealizowane', 'Completed');
+    case 'Anulowane': return t('Anulowane', 'Cancelled');
+    default: return status;
+  }
+};
+
+const getTypeLabel = (type: string, t: ReturnType<typeof useTranslate>) => (
+  type === 'na wynos' ? t('Na wynos', 'Take away') : t('Na miejscu', 'Eat in')
+);
 
 const parseErrorResponse = async (res: Response, fallback: string): Promise<never> => {
   const contentType = res.headers.get('content-type') ?? '';
@@ -68,14 +83,22 @@ const parseErrorResponse = async (res: Response, fallback: string): Promise<neve
   throw new Error(fallback);
 };
 
-const formatDuration = (order: OrderPreview) => {
-  if (!order.createdAt || !order.finishedAt) return '-';
+const getDurationSeconds = (order: OrderPreview) => {
+  if (!order.createdAt || !order.finishedAt) return 0;
   const diffMs = new Date(order.finishedAt).getTime() - new Date(order.createdAt).getTime();
-  if (Number.isNaN(diffMs) || diffMs <= 0) return '-';
-  const totalSec = Math.floor(diffMs / 1000);
+  if (Number.isNaN(diffMs) || diffMs <= 0) return 0;
+  return Math.floor(diffMs / 1000);
+};
+
+const formatDuration = (order: OrderPreview, language: string) => {
+  const totalSec = getDurationSeconds(order);
+  if (!totalSec) return '-';
   const min = Math.floor(totalSec / 60);
   const sec = totalSec % 60;
-  return `${min} min ${sec.toString().padStart(2, '0')} s`;
+  const secText = sec.toString().padStart(2, '0');
+  return language === 'pl'
+    ? `${min} min ${secText} s`
+    : `${min} min ${secText} s`;
 };
 
 const ManagerReportsView: React.FC = () => {
@@ -94,6 +117,11 @@ const ManagerReportsView: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortOption>('createdAt');
 
   const auth = useAuth();
+  const { language } = useLocale();
+  const t = useTranslate();
+  const dateLocale = language === 'pl' ? pl : undefined;
+  const localeCode = language === 'pl' ? 'pl-PL' : 'en-US';
+const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
 
   const openNativePicker = (input: HTMLInputElement) => {
     const picker = input as HTMLInputElement & { showPicker?: () => void };
@@ -138,13 +166,13 @@ const ManagerReportsView: React.FC = () => {
   const formatLocalDate = (iso: string | null): string => {
     if (!iso) return '';
     const date = new Date(iso);
-    return date.toLocaleDateString('pl-PL');
+    return date.toLocaleDateString(localeCode);
   };
 
   const formatLocalTime = (iso: string | null): string => {
     if (!iso) return '';
     const date = new Date(iso);
-    return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return date.toLocaleTimeString(localeCode, { hour: '2-digit', minute: '2-digit', hour12: language !== 'pl' });
   };
 
   useEffect(() => {
@@ -176,23 +204,22 @@ const ManagerReportsView: React.FC = () => {
         headers: authHeaders,
       });
       if (!res.ok) {
-    const fallback = `Błąd pobierania raportu (HTTP ${res.status})`;
-        await parseErrorResponse(res, fallback);
+        await parseErrorResponse(res, t('BĹ‚Ä…d pobierania raportu.', 'Failed to download report.'));
       }
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       const filename = format === 'csv'
-        ? (reportType === 'orders' ? 'raport_zamowien.csv' : 'raport_statystyk.csv')
-        : (reportType === 'orders' ? 'raport_zamowien.pdf' : 'raport_statystyk.pdf');
+        ? (reportType === 'orders' ? t('raport_zamowien.csv', 'orders_report.csv') : t('raport_statystyk.csv', 'stats_report.csv'))
+        : (reportType === 'orders' ? t('raport_zamowien.pdf', 'orders_report.pdf') : t('raport_statystyk.pdf', 'stats_report.pdf'));
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err: unknown) {
-      const message = err instanceof Error && err.message ? err.message : 'Nieznany błąd raportu';
+      const message = err instanceof Error && err.message ? err.message : t('Nieznany bĹ‚Ä…d raportu', 'Unknown report error');
       setError(message);
     } finally {
       setLoading(false);
@@ -217,26 +244,19 @@ const ManagerReportsView: React.FC = () => {
 
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, { headers: authHeaders });
       if (!res.ok) {
-        const fallback = `Błąd pobierania zamówień (HTTP ${res.status})`;
-        await parseErrorResponse(res, fallback);
+        await parseErrorResponse(res, t('Nie udaĹ‚o siÄ™ pobraÄ‡ danych raportu.', 'Failed to fetch report data.'));
       }
       let data = ((await res.json()) as OrdersResponse).orders ?? [];
 
       if (sortBy === 'duration') {
-        data = [...data].sort((a, b) => {
-          const toSec = (val: string) => {
-            const match = val.match(/(\d+) min (\d+) s/);
-            return match ? Number(match[1]) * 60 + Number(match[2]) : 0;
-          };
-          return toSec(formatDuration(b)) - toSec(formatDuration(a));
-        });
+        data = [...data].sort((a, b) => getDurationSeconds(b) - getDurationSeconds(a));
       } else {
         data = [...data].sort((a, b) => b.orderNumber - a.orderNumber);
       }
 
       setOrdersPreview(data);
     } catch (err: unknown) {
-      const message = err instanceof Error && err.message ? err.message : 'Nieznany błąd pobierania';
+      const message = err instanceof Error && err.message ? err.message : t('Nieznany bĹ‚Ä…d pobierania', 'Unknown fetch error');
       setPreviewError(message);
     } finally {
       setPreviewLoading(false);
@@ -287,36 +307,36 @@ const ManagerReportsView: React.FC = () => {
 
   return (
     <div className="manager-view">
-      <h2>Raporty PDF</h2>
+      <h2>{t('Raporty PDF', 'PDF reports')}</h2>
       <div className="manager-filters" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
         <label>
-          Data od:
+          {t('Data od:', 'Date from:')}
           <ReactDatePicker
             selected={dateFrom}
             onChange={date => setDateFrom(date)}
             maxDate={dateTo ?? undefined}
             dateFormat="yyyy-MM-dd"
-            locale={pl}
-            placeholderText="Wybierz datę"
+            locale={dateLocale}
+            placeholderText={t('Wybierz datę', 'Select date')}
             isClearable
             className="manager-datepicker"
           />
         </label>
         <label>
-          Data do:
+          {t('Data do:', 'Date to:')}
           <ReactDatePicker
             selected={dateTo}
             onChange={date => setDateTo(date)}
             minDate={dateFrom ?? undefined}
             dateFormat="yyyy-MM-dd"
-            locale={pl}
-            placeholderText="Wybierz datę"
+            locale={dateLocale}
+            placeholderText={t('Wybierz datę', 'Select date')}
             isClearable
             className="manager-datepicker"
           />
         </label>
         <label>
-          Godzina od:
+          {t('Godzina od:', 'Time from:')}
           <input
             type="time"
             value={timeFrom}
@@ -327,7 +347,7 @@ const ManagerReportsView: React.FC = () => {
           />
         </label>
         <label>
-          Godzina do:
+          {t('Godzina do:', 'Time to:')}
           <input
             type="time"
             value={timeTo}
@@ -338,116 +358,108 @@ const ManagerReportsView: React.FC = () => {
           />
         </label>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('today')}>Dziś</button>
-          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('last7')}>Ostatnie 7 dni</button>
-          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('thisWeek')}>Ten tydzień</button>
-          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('thisMonth')}>Ten miesiąc</button>
+          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('today')}>
+            {t('Dziś', 'Today')}
+          </button>
+          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('last7')}>
+            {t('Ostatnie 7 dni', 'Last 7 days')}
+          </button>
+          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('thisWeek')}>
+            {t('Ten tydzień', 'This week')}
+          </button>
+          <button type="button" className="manager-save-btn" onClick={() => setQuickRange('thisMonth')}>
+            {t('Ten miesiąc', 'This month')}
+          </button>
           <button type="button" className="manager-cancel-btn" onClick={() => { setDateFrom(null); setDateTo(null); }}>
-            Wyczyść zakres
+            {t('Wyczyść zakres', 'Clear range')}
           </button>
         </div>
       </div>
 
       <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-        <button
-          className="manager-save-btn"
-          disabled={loading}
-          onClick={() => downloadReport('orders', 'pdf')}
-        >
-          Pobierz raport zamówień (PDF)
+        <button className="manager-save-btn" disabled={loading} onClick={() => downloadReport('orders', 'pdf')}>
+          {t('Pobierz raport zamĂłwieĹ„ (PDF)', 'Download orders report (PDF)')}
         </button>
-        <button
-          className="manager-save-btn"
-          disabled={loading}
-          onClick={() => downloadReport('orders', 'csv')}
-        >
-          Pobierz raport zamówień (CSV)
+        <button className="manager-save-btn" disabled={loading} onClick={() => downloadReport('orders', 'csv')}>
+          {t('Pobierz raport zamĂłwieĹ„ (CSV)', 'Download orders report (CSV)')}
         </button>
-        <button
-          className="manager-save-btn"
-          disabled={loading}
-          onClick={() => downloadReport('stats', 'pdf')}
-        >
-          Pobierz raport statystyk (PDF)
+        <button className="manager-save-btn" disabled={loading} onClick={() => downloadReport('stats', 'pdf')}>
+          {t('Pobierz raport statystyk (PDF)', 'Download stats report (PDF)')}
         </button>
-        <button
-          className="manager-save-btn"
-          disabled={loading}
-          onClick={() => downloadReport('stats', 'csv')}
-        >
-          Pobierz raport statystyk (CSV)
+        <button className="manager-save-btn" disabled={loading} onClick={() => downloadReport('stats', 'csv')}>
+          {t('Pobierz raport statystyk (CSV)', 'Download stats report (CSV)')}
         </button>
         {error && <span className="manager-error" style={{ alignSelf: 'center' }}>{error}</span>}
       </div>
 
       <div style={{ marginTop: 32, color: '#888', fontSize: '1.05rem' }}>
-        <b>Raport zamówień</b> - lista zamówień z wybranego okresu.<br />
-        <b>Raport statystyk</b> - liczba zamówień, najczęściej kupowane produkty oraz wartości.
+        <b>{t('Raport zamĂłwieĹ„', 'Orders report')}</b> - {t('lista zamĂłwieĹ„ z wybranego okresu.', 'list of orders from the selected period.')}<br />
+        <b>{t('Raport statystyk', 'Stats report')}</b> - {t('liczba zamĂłwieĹ„, najczÄ™Ĺ›ciej kupowane produkty oraz wartoĹ›ci.', 'number of orders, top selling items and totals.')}
       </div>
 
       <div style={{ marginTop: 32 }}>
-        <h3 style={{ color: '#ff9100', marginBottom: 8 }}>Podglad raportu</h3>
+        <h3 style={{ color: '#ff9100', marginBottom: 8 }}>{t('PodglÄ…d raportu', 'Report preview')}</h3>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
-          <label>Status:
+          <label>{t('Status:', 'Status:')}
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="manager-input">
-              <option value="">Wszystkie</option>
-              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              <option value="">{t('Wszystkie', 'All')}</option>
+              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{getStatusLabel(s, t)}</option>)}
             </select>
           </label>
-          <label>Typ:
+          <label>{t('Typ:', 'Type:')}
             <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="manager-input">
-              <option value="">Wszystkie</option>
-              {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+              <option value="">{t('Wszystkie', 'All')}</option>
+              {TYPE_OPTIONS.map(option => <option key={option} value={option}>{getTypeLabel(option, t)}</option>)}
             </select>
           </label>
-          <label>Sortuj po:
+          <label>{t('Sortuj po:', 'Sort by:')}
             <select value={sortBy} onChange={e => setSortBy(e.target.value as SortOption)} className="manager-input">
-              <option value="createdAt">Dacie</option>
-              <option value="duration">Czasie realizacji</option>
+              <option value="createdAt">{t('Dacie', 'Date')}</option>
+              <option value="duration">{t('Czasie realizacji', 'Fulfillment time')}</option>
             </select>
           </label>
-          <button className="manager-save-btn" onClick={fetchPreview}>Odśwież</button>
-          <button type="button" className="manager-cancel-btn" onClick={resetFilters}>Resetuj filtry</button>
+          <button className="manager-save-btn" onClick={fetchPreview}>{t('OdĹ›wieĹĽ', 'Refresh')}</button>
+          <button type="button" className="manager-cancel-btn" onClick={resetFilters}>{t('Resetuj filtry', 'Reset filters')}</button>
         </div>
         {previewLoading ? (
-          <p>Loading...</p>
+          <p>{t('Ĺadowanie...', 'Loading...')}</p>
         ) : previewError ? (
           <p style={{ color: '#ff3b00' }}>{previewError}</p>
         ) : (
           <table className="manager-table" style={{ marginTop: 8 }}>
             <thead>
               <tr>
-                <th>Numer</th>
-                <th>Data</th>
-                <th>Godzina</th>
-                <th>Typ</th>
-                <th>Status</th>
-                <th>Pozycje</th>
-                <th>Czas realizacji</th>
+                <th>{t('Numer', 'Number')}</th>
+                <th>{t('Data', 'Date')}</th>
+                <th>{t('Godzina', 'Time')}</th>
+                <th>{t('Typ', 'Type')}</th>
+                <th>{t('Status', 'Status')}</th>
+                <th>{t('Pozycje', 'Items')}</th>
+                <th>{t('Czas realizacji', 'Fulfillment time')}</th>
               </tr>
             </thead>
             <tbody>
               {ordersPreview.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center' }}>Brak zamówień</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center' }}>{t('Brak zamĂłwieĹ„', 'No orders')}</td></tr>
               ) : ordersPreview.map(order => (
                 <tr key={order.id}>
                   <td><b>{order.orderNumber}</b></td>
                   <td>{formatLocalDate(order.createdAt)}</td>
                   <td>{formatLocalTime(order.createdAt)}</td>
-                  <td>{order.type}</td>
-                  <td>{order.status}</td>
+                  <td>{getTypeLabel(order.type, t)}</td>
+                  <td>{getStatusLabel(order.status, t)}</td>
                   <td style={{ verticalAlign: 'middle', textAlign: 'left', height: '48px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
                       <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'block', width: '100%' }}>
                         {order.items.map(item => (
                           <li key={item.id} style={{ fontSize: '0.98rem', lineHeight: '1.6', display: 'inline' }}>
-                            {item.name} x {item.quantity} <span style={{ color: '#ff9100' }}>{item.price} zł</span>{' '}
+                            {(language === 'pl' ? item.name : (item.nameEn?.trim() || item.name))} x {item.quantity} <span style={{ color: '#ff9100' }}>{item.price} {currencySymbol}</span>{' '}
                           </li>
                         ))}
                       </ul>
                     </div>
                   </td>
-                  <td>{formatDuration(order)}</td>
+                  <td>{formatDuration(order, language)}</td>
                 </tr>
               ))}
             </tbody>
@@ -459,3 +471,6 @@ const ManagerReportsView: React.FC = () => {
 };
 
 export default ManagerReportsView;
+
+
+

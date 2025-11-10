@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslate } from '../context/LocaleContext';
 import '../App.css';
 
 type TileConfig = {
@@ -16,6 +17,7 @@ type TileConfig = {
 function LandingView() {
   const navigate = useNavigate();
   const auth = useAuth();
+  const t = useTranslate();
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '' });
   const [passwordFeedback, setPasswordFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -28,71 +30,71 @@ function LandingView() {
   const tiles = useMemo<TileConfig[]>(() => [
     {
       key: 'order',
-      title: 'Zamów teraz',
-      description: 'Tryb kiosku dla klientów przy stoliku.',
+      title: t('Zamów teraz', 'Order now'),
+      description: t('Tryb kiosku dla klientów przy stoliku.', 'Kiosk mode for dine-in guests.'),
       action: () => navigate('/order'),
-      cta: 'Otwórz kiosk',
+      cta: t('Otwórz kiosk', 'Open kiosk'),
       badge: null,
     },
     {
       key: 'employee',
-      title: 'Panel pracownika',
-      description: 'Podgląd i aktualizacja statusów zamówień.',
+      title: t('Panel pracownika', 'Employee panel'),
+      description: t('Podgląd i aktualizacja statusów zamówień.', 'Review and update order statuses.'),
       action: () => navigate(canUseEmployeePanel
         ? '/employee'
         : '/login?roles=manager,employee&next=/employee'),
-      cta: canUseEmployeePanel ? 'Przejdź do panelu' : 'Zaloguj się',
-      badge: canUseEmployeePanel ? (isManager ? 'Dostęp menedżera' : 'Zalogowany') : null,
+      cta: canUseEmployeePanel ? t('Przejdź do panelu', 'Open panel') : t('Zaloguj się', 'Sign in'),
+      badge: canUseEmployeePanel ? (isManager ? t('Dostęp menedżera', 'Manager access') : t('Zalogowany', 'Signed in')) : null,
     },
     {
       key: 'manager',
-      title: 'Panel menedżera',
-      description: 'Zarządzanie menu, raporty i kontrola zamówień.',
+      title: t('Panel menedżera', 'Manager panel'),
+      description: t('Zarządzanie menu, raporty i kontrola zamówień.', 'Manage menu, reports and orders.'),
       action: () => navigate(isManager
         ? '/manager'
         : '/login?roles=manager&next=/manager'),
-      cta: isManager ? 'Przejdź do panelu' : 'Zaloguj się',
-      badge: isManager ? 'Zalogowany' : null,
+      cta: isManager ? t('Przejdź do panelu', 'Open panel') : t('Zaloguj się', 'Sign in'),
+      badge: isManager ? t('Zalogowany', 'Signed in') : null,
     },
     {
       key: 'screen',
-      title: 'Ekran numerów',
-      description: 'Widok dla klientów oczekujących na odbiór.',
+      title: t('Ekran numerów', 'Order screen'),
+      description: t('Widok dla klientów oczekujących na odbiór.', 'Public view for waiting customers.'),
       action: () => navigate('/screen'),
-      cta: 'Pokaż ekran',
+      cta: t('Pokaż ekran', 'Open screen'),
       badge: null,
       subtle: true,
     },
-  ], [navigate, canUseEmployeePanel, isManager]);
+  ], [navigate, canUseEmployeePanel, isManager, t]);
 
   return (
     <div className="landing-view">
       <header className="landing-header">
-        <img src="/img/logo.jpg" alt="Logo restauracji" />
+        <img src="/img/logo.jpg" alt={t('Logo restauracji', 'Restaurant logo')} />
         <div className="landing-heading">
-          <h1>Centrum restauracji</h1>
-          <p>Wybierz obszar, w którym chcesz pracować lub pomagać klientowi.</p>
+          <h1>{t('Centrum restauracji', 'Restaurant hub')}</h1>
+          <p>{t('Wybierz obszar, w którym chcesz pracować lub pomagać klientowi.', 'Choose the area you want to work in or assist a customer with.')}</p>
         </div>
         <div className="landing-user-info">
           {auth.isAuthenticated ? (
             <>
-              <span className="landing-user-badge">Zalogowany jako</span>
+              <span className="landing-user-badge">{t('Zalogowany jako', 'Signed in as')}</span>
               <strong>{auth.role}</strong>
               <button type="button" className="landing-logout-btn" onClick={() => setShowPasswordForm(v => !v)}>
-                {showPasswordForm ? 'Ukryj zmianę hasła' : 'Zmień hasło'}
+                {showPasswordForm ? t('Ukryj zmianę hasła', 'Hide password form') : t('Zmień hasło', 'Change password')}
               </button>
               <button type="button" onClick={auth.logout} className="landing-logout-btn">
-                Wyloguj
+                {t('Wyloguj', 'Sign out')}
               </button>
             </>
           ) : (
-            <span className="landing-user-anon">Nie jesteś zalogowany</span>
+            <span className="landing-user-anon">{t('Nie jesteś zalogowany', 'You are not signed in')}</span>
           )}
         </div>
       </header>
       {showPasswordForm && auth.isAuthenticated && (
         <div className="landing-password-card">
-          <h3>Zmień hasło</h3>
+          <h3>{t('Zmień hasło', 'Change password')}</h3>
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -100,10 +102,10 @@ function LandingView() {
               setPasswordFeedback(null);
               try {
                 await auth.changePassword(passwordForm.current, passwordForm.next);
-                setPasswordFeedback({ type: 'success', message: 'Hasło zostało zaktualizowane.' });
+                setPasswordFeedback({ type: 'success', message: t('Hasło zostało zaktualizowane.', 'Password updated successfully.') });
                 setPasswordForm({ current: '', next: '' });
               } catch (err: unknown) {
-                const message = err instanceof Error && err.message ? err.message : 'Nie udało się zmienić hasła.';
+                const message = err instanceof Error && err.message ? err.message : t('Nie udało się zmienić hasła.', 'Could not change the password.');
                 setPasswordFeedback({ type: 'error', message });
               } finally {
                 setProcessingPassword(false);
@@ -112,7 +114,7 @@ function LandingView() {
             className="landing-password-form"
           >
             <label>
-              Obecne hasło
+              {t('Obecne hasło', 'Current password')}
               <input
                 type="password"
                 value={passwordForm.current}
@@ -121,7 +123,7 @@ function LandingView() {
               />
             </label>
             <label>
-              Nowe hasło
+              {t('Nowe hasło', 'New password')}
               <input
                 type="password"
                 value={passwordForm.next}
@@ -137,7 +139,7 @@ function LandingView() {
             )}
             <div className="landing-password-actions">
               <button type="submit" disabled={processingPassword}>
-                {processingPassword ? 'Zapisywanie...' : 'Zapisz'}
+                {processingPassword ? t('Zapisywanie...', 'Saving...') : t('Zapisz', 'Save')}
               </button>
             </div>
           </form>
