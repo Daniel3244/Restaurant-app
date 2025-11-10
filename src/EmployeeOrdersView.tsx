@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./App.css";
 import { API_BASE_URL } from "./config";
 import { useAuth } from "./context/AuthContext";
@@ -55,6 +56,7 @@ function EmployeeOrdersView() {
   const { language } = useLocale();
   const t = useTranslate();
   const currencySymbol = language === "pl" ? "zł" : "PLN";
+  const navigate = useNavigate();
 
   const authHeaders = useMemo(() => {
     const headers: Record<string, string> = {};
@@ -197,7 +199,10 @@ function EmployeeOrdersView() {
             {t("Widoczne:", "Visible:")} {filteredOrders.length} / {totalElements}
           </span>
         </div>
-        <div className="manager-nav-actions">
+        <div className="manager-nav-actions" style={{ gap: 12 }}>
+          <button className="manager-cancel-btn" onClick={() => navigate("/")}>
+            {t("Powrót", "Back")}
+          </button>
           <button className="manager-logout-btn" onClick={auth.logout}>{t("Wyloguj", "Sign out")}</button>
         </div>
       </div>
