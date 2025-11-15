@@ -40,17 +40,17 @@ public class RestaurantBackendApplication {
 		return args -> {
 			List<MenuSeed> seeds = List.of(
 					new MenuSeed("Lemoniada", "Lemoniada cytrynowa", "Lemonade", "Refreshing lemon drink.", 8.00, "napoje", "/uploads/bb16f6f9-aeb3-4d70-9946-780d2d0c488a.jpg"),
-					new MenuSeed("Coca-Cola", "Coca cola mala", "Coca-Cola", "Small Coke.", 7.00, "napoje", "/uploads/5ff3cd3e-2718-43c1-9d81-29bcea62189c.jpg"),
+					new MenuSeed("Cola", "Klasyczny napój cola.", "Cola", "Classic cola drink.", 7.00, "napoje", "/uploads/5ff3cd3e-2718-43c1-9d81-29bcea62189c.jpg"),
 					new MenuSeed("Frytki", "Frytki z sola", "Fries", "Salted fries.", 9.00, "dodatki", "/uploads/5644a5c3-e463-4de3-8446-69d97a190daf.jpg"),
 					new MenuSeed("Burger Wolowy", "Burger z wolowina", "Beef Burger", "Juicy beef burger.", 19.00, "burgery", "/uploads/b50cdc8f-72aa-44f5-a26f-3819bbb69d8a.jpg"),
-					new MenuSeed("Burger Wolowy + Coca-Cola + Frytki", "Zestaw", "Beef Burger + Coca-Cola + Fries", "Combo meal.", 28.00, "zestawy", "/uploads/67a278a2-b730-4105-832b-b420b92a21d1.jpg"),
+					new MenuSeed("Burger Wolowy + Cola + Frytki", "Zestaw Burger Wolowy + Cola + Frytki", "Beef Burger + Cola + Fries", "Combo meal.", 28.00, "zestawy", "/uploads/67a278a2-b730-4105-832b-b420b92a21d1.jpg"),
 					new MenuSeed("Wrap Kurczak", "Wrap z kurczakiem", "Chicken Wrap", "Wrap filled with chicken.", 17.00, "wrapy", "/uploads/74559695-ab8c-4db0-a7da-c3b4004f0dfb.jpg"),
 					new MenuSeed("Sos do frytek", "Sos do frytek", "Fries Dip", "Dip served with fries.", 2.00, "dodatki", "/uploads/999c4842-2f56-4c4d-a73c-3ec4e08f19c5.jpg"),
 					new MenuSeed("Burger BBQ", "Burger BBQ", "BBQ Burger", "Burger with BBQ sauce.", 21.00, "burgery", "/uploads/59183c1b-4c61-4e70-a70d-2591b55ba491.jpg"),
 					new MenuSeed("Burger Vege", "Burger vege", "Veggie Burger", "Plant-based burger.", 18.00, "burgery", "/uploads/312b0359-85a3-4605-99cf-c83a6af55799.jpg"),
 					new MenuSeed("Wrap Vege", "Wrap vege", "Veggie Wrap", "Wrap with veggie filling.", 16.00, "wrapy", "/uploads/d714437d-5f38-4356-bf2f-31c6113cd15b.jpg"),
-					new MenuSeed("Wrap + Sprite + Frytki", "Wrap + Sprite + Frytki zestaw", "Wrap + Sprite + Fries", "Wrap combo with drink and fries.", 27.00, "zestawy", "/uploads/06fce736-28e0-4fd9-9881-34d3cce13b3f.jpg"),
-					new MenuSeed("Sprite", "Sprite", "Sprite", "Sprite soda.", 7.00, "napoje", "/uploads/14ec6d21-3f2e-45b7-80e2-4374cae71b4c.jpg"),
+					new MenuSeed("Wrap + Lemon Drink + Frytki", "Wrap + Lemon Drink + Frytki zestaw", "Wrap + Lemon Drink + Fries", "Wrap combo with drink and fries.", 27.00, "zestawy", "/uploads/06fce736-28e0-4fd9-9881-34d3cce13b3f.jpg"),
+					new MenuSeed("Lemon Drink", "Orzeźwiający napój cytrynowy.", "Lemon Drink", "Lemon-flavoured soda.", 7.00, "napoje", "/uploads/14ec6d21-3f2e-45b7-80e2-4374cae71b4c.jpg"),
 					new MenuSeed("Woda", "", "Water", "Still water.", 5.00, "napoje", "/uploads/13b31389-726b-428a-a8c3-a913c822a9af.jpg")
 			);
 
