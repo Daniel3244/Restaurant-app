@@ -70,7 +70,7 @@ const ManagerOrdersView: React.FC = () => {
   const t = useTranslate();
   const dateLocale = language === 'pl' ? pl : undefined;
   const localeCode = language === 'pl' ? 'pl-PL' : 'en-US';
-  const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
+  const currencySymbol = language === 'pl' ? 'zł' : 'PLN';
 
   const openNativePicker = (input: HTMLInputElement) => {
     const picker = input as HTMLInputElement & { showPicker?: () => void };
@@ -117,7 +117,7 @@ const ManagerOrdersView: React.FC = () => {
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, {
         headers: authHeaders,
       });
-      if (!res.ok) throw new Error(t('BĹ‚Ä…d pobierania zamĂłwieĹ„', 'Failed to fetch orders'));
+      if (!res.ok) throw new Error(t('Błąd pobierania zamówień', 'Failed to fetch orders'));
       const payload = await res.json() as OrdersResponse;
       const fetchedOrders = payload.orders ?? [];
       setOrders(fetchedOrders);
@@ -130,7 +130,7 @@ const ManagerOrdersView: React.FC = () => {
       setHasLoaded(true);
       setError(null);
     } catch (err: unknown) {
-      const message = err instanceof Error && err.message ? err.message : t('Nieznany bĹ‚Ä…d', 'Unknown error');
+      const message = err instanceof Error && err.message ? err.message : t('Nieznany błąd', 'Unknown error');
       setError(message);
     } finally {
       if (shouldShowSpinner) {
@@ -222,16 +222,16 @@ const ManagerOrdersView: React.FC = () => {
     <div className="manager-view">
       <div className="manager-view-header manager-view-header--wrap">
         <div>
-          <h2>{t('PrzeglÄ…d zamĂłwieĹ„', 'Orders overview')}</h2>
+          <h2>{t('Przegląd zamówień', 'Orders overview')}</h2>
           <span className="manager-refresh-info">
-            {t('OdĹ›wieĹĽono:', 'Refreshed:')} {formattedRefresh}
+            {t('Odświeżono:', 'Refreshed:')} {formattedRefresh}
           </span>
         </div>
       </div>
 
       <div className="manager-summary-grid compact">
         <div className="manager-summary-card">
-          <span className="manager-summary-title">{t('Widoczne zamĂłwienia', 'Visible orders')}</span>
+          <span className="manager-summary-title">{t('Widoczne zamówienia', 'Visible orders')}</span>
           <strong>{visibleSummary}</strong>
         </div>
         <div className="manager-summary-card">
@@ -243,7 +243,7 @@ const ManagerOrdersView: React.FC = () => {
           <strong>{readyCount}</strong>
         </div>
         <div className="manager-summary-card">
-          <span className="manager-summary-title">{t('Suma wartoĹ›ci', 'Total value')}</span>
+          <span className="manager-summary-title">{t('Suma wartości', 'Total value')}</span>
           <strong>{totalSum.toFixed(2)} {currencySymbol}</strong>
         </div>
       </div>
@@ -271,7 +271,7 @@ const ManagerOrdersView: React.FC = () => {
           onClick={() => setPage(prev => Math.min(prev + 1, Math.max(totalPages - 1, 0)))}
           disabled={!canGoNext}
         >
-          {t('NastÄ™pna', 'Next')} {'>'}
+          {t('Następna', 'Next')} {'>'}
         </button>
         <button
           className="manager-save-btn"
@@ -282,7 +282,7 @@ const ManagerOrdersView: React.FC = () => {
         </button>
       </div>
       <p className="manager-refresh-info" style={{ marginTop: -8, marginBottom: 16 }}>
-        {t('ĹÄ…cznie', 'Total')} {totalAvailable} {t('zamĂłwieĹ„', 'orders')} â€” {t('strona', 'page')} {pageLabel} {t('z', 'of')} {totalPages}
+        {t('Łącznie', 'Total')} {totalAvailable} {t('zamówień', 'orders')} — {t('strona', 'page')} {pageLabel} {t('z', 'of')} {totalPages}
       </p>
 
       <div className="manager-filters">
@@ -294,7 +294,7 @@ const ManagerOrdersView: React.FC = () => {
             maxDate={dateRange.dateTo ?? undefined}
             dateFormat="yyyy-MM-dd"
             locale={dateLocale}
-            placeholderText={t('Wybierz datÄ™', 'Select date')}
+            placeholderText={t('Wybierz datę', 'Select date')}
             isClearable
             className="manager-datepicker"
           />
@@ -307,7 +307,7 @@ const ManagerOrdersView: React.FC = () => {
             minDate={dateRange.dateFrom ?? undefined}
             dateFormat="yyyy-MM-dd"
             locale={dateLocale}
-            placeholderText={t('Wybierz datÄ™', 'Select date')}
+            placeholderText={t('Wybierz datę', 'Select date')}
             isClearable
             className="manager-datepicker"
           />
@@ -358,12 +358,12 @@ const ManagerOrdersView: React.FC = () => {
             {t('Resetuj filtry', 'Reset filters')}
           </button>
           <button className="manager-save-btn" onClick={() => fetchOrders({ showSpinner: true, targetPage: page })}>
-            {t('OdĹ›wieĹĽ', 'Refresh')}
+            {t('Odśwież', 'Refresh')}
           </button>
         </div>
       </div>
       {loading ? (
-        <p>{t('Ĺadowanie...', 'Loading...')}</p>
+        <p>{t('Ładowanie...', 'Loading...')}</p>
       ) : error ? (
         <p style={{ color: '#ff3b00' }}>{error}</p>
       ) : (
@@ -380,7 +380,7 @@ const ManagerOrdersView: React.FC = () => {
           </thead>
           <tbody>
             {filteredOrders.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center' }}>{t('Brak zamĂłwieĹ„', 'No orders')}</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: 'center' }}>{t('Brak zamówień', 'No orders')}</td></tr>
             ) : filteredOrders.map(order => (
               <tr key={order.id}>
                 <td><b>{order.orderNumber}</b></td>

@@ -121,7 +121,7 @@ const ManagerReportsView: React.FC = () => {
   const t = useTranslate();
   const dateLocale = language === 'pl' ? pl : undefined;
   const localeCode = language === 'pl' ? 'pl-PL' : 'en-US';
-const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
+  const currencySymbol = language === 'pl' ? 'zł' : 'PLN';
 
   const openNativePicker = (input: HTMLInputElement) => {
     const picker = input as HTMLInputElement & { showPicker?: () => void };
@@ -204,7 +204,7 @@ const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
         headers: authHeaders,
       });
       if (!res.ok) {
-        await parseErrorResponse(res, t('BĹ‚Ä…d pobierania raportu.', 'Failed to download report.'));
+        await parseErrorResponse(res, t('Błąd pobierania raportu.', 'Failed to download report.'));
       }
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -219,7 +219,7 @@ const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err: unknown) {
-      const message = err instanceof Error && err.message ? err.message : t('Nieznany bĹ‚Ä…d raportu', 'Unknown report error');
+      const message = err instanceof Error && err.message ? err.message : t('Nieznany błąd raportu', 'Unknown report error');
       setError(message);
     } finally {
       setLoading(false);
@@ -244,7 +244,7 @@ const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
 
       const res = await fetch(`${API_BASE_URL}/api/manager/orders?${params.toString()}`, { headers: authHeaders });
       if (!res.ok) {
-        await parseErrorResponse(res, t('Nie udaĹ‚o siÄ™ pobraÄ‡ danych raportu.', 'Failed to fetch report data.'));
+        await parseErrorResponse(res, t('Nie udało się pobrać danych raportu.', 'Failed to fetch report data.'));
       }
       let data = ((await res.json()) as OrdersResponse).orders ?? [];
 
@@ -256,7 +256,7 @@ const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
 
       setOrdersPreview(data);
     } catch (err: unknown) {
-      const message = err instanceof Error && err.message ? err.message : t('Nieznany bĹ‚Ä…d pobierania', 'Unknown fetch error');
+      const message = err instanceof Error && err.message ? err.message : t('Nieznany błąd pobierania', 'Unknown fetch error');
       setPreviewError(message);
     } finally {
       setPreviewLoading(false);
@@ -378,10 +378,10 @@ const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
 
       <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         <button className="manager-save-btn" disabled={loading} onClick={() => downloadReport('orders', 'pdf')}>
-          {t('Pobierz raport zamĂłwieĹ„ (PDF)', 'Download orders report (PDF)')}
+          {t('Pobierz raport zamówień (PDF)', 'Download orders report (PDF)')}
         </button>
         <button className="manager-save-btn" disabled={loading} onClick={() => downloadReport('orders', 'csv')}>
-          {t('Pobierz raport zamĂłwieĹ„ (CSV)', 'Download orders report (CSV)')}
+          {t('Pobierz raport zamówień (CSV)', 'Download orders report (CSV)')}
         </button>
         <button className="manager-save-btn" disabled={loading} onClick={() => downloadReport('stats', 'pdf')}>
           {t('Pobierz raport statystyk (PDF)', 'Download stats report (PDF)')}
@@ -393,12 +393,12 @@ const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
       </div>
 
       <div style={{ marginTop: 32, color: '#888', fontSize: '1.05rem' }}>
-        <b>{t('Raport zamĂłwieĹ„', 'Orders report')}</b> - {t('lista zamĂłwieĹ„ z wybranego okresu.', 'list of orders from the selected period.')}<br />
-        <b>{t('Raport statystyk', 'Stats report')}</b> - {t('liczba zamĂłwieĹ„, najczÄ™Ĺ›ciej kupowane produkty oraz wartoĹ›ci.', 'number of orders, top selling items and totals.')}
+        <b>{t('Raport zamówień', 'Orders report')}</b> - {t('lista zamówień z wybranego okresu.', 'list of orders from the selected period.')}<br />
+        <b>{t('Raport statystyk', 'Stats report')}</b> - {t('liczba zamówień, najczęściej kupowane produkty oraz wartości.', 'number of orders, top selling items and totals.')}
       </div>
 
       <div style={{ marginTop: 32 }}>
-        <h3 style={{ color: '#ff9100', marginBottom: 8 }}>{t('PodglÄ…d raportu', 'Report preview')}</h3>
+        <h3 style={{ color: '#ff9100', marginBottom: 8 }}>{t('Podgląd raportu', 'Report preview')}</h3>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
           <label>{t('Status:', 'Status:')}
             <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="manager-input">
@@ -418,11 +418,11 @@ const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
               <option value="duration">{t('Czasie realizacji', 'Fulfillment time')}</option>
             </select>
           </label>
-          <button className="manager-save-btn" onClick={fetchPreview}>{t('OdĹ›wieĹĽ', 'Refresh')}</button>
+          <button className="manager-save-btn" onClick={fetchPreview}>{t('Odśwież', 'Refresh')}</button>
           <button type="button" className="manager-cancel-btn" onClick={resetFilters}>{t('Resetuj filtry', 'Reset filters')}</button>
         </div>
         {previewLoading ? (
-          <p>{t('Ĺadowanie...', 'Loading...')}</p>
+          <p>{t('Ładowanie...', 'Loading...')}</p>
         ) : previewError ? (
           <p style={{ color: '#ff3b00' }}>{previewError}</p>
         ) : (
@@ -440,7 +440,7 @@ const currencySymbol = language === 'pl' ? 'zĹ‚' : 'PLN';
             </thead>
             <tbody>
               {ordersPreview.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center' }}>{t('Brak zamĂłwieĹ„', 'No orders')}</td></tr>
+                <tr><td colSpan={7} style={{ textAlign: 'center' }}>{t('Brak zamówień', 'No orders')}</td></tr>
               ) : ordersPreview.map(order => (
                 <tr key={order.id}>
                   <td><b>{order.orderNumber}</b></td>
