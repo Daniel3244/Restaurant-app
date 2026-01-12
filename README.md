@@ -161,13 +161,13 @@ Podczas startu aplikacji (CommandLineRunner):
 - w profilu produkcyjnym wymagana baza MySQL 8.
 
 **Zmiennie srodowiskowe**
-- `APP_JWT_SECRET` – klucz HMAC do podpisu JWT (domyslnie `change-me-in-prod`, w prod nalezy nadpisac),
-- `APP_JWT_TTL_HOURS` – czas zycia tokenu (domyslnie 8h),
-- `APP_CORS_ALLOWED_ORIGINS` – lista originow rozdzielona przecinkami (np. `http://localhost:5173,http://twoja-domena`),
-- `APP_UPLOAD_DIR` – sciezka na pliki JPG (domyslnie `uploads` w katalogu backendu),
-- `SPRING_PROFILES_ACTIVE` – `dev`, `test` lub `prod` (domyslnie `prod`),
-- `SPRING_DATASOURCE_*` – konfiguracja MySQL w prod,
-- `VITE_API_BASE_URL` – adres backendu od strony frontendu (domyslnie `http://localhost:8081`).
+- `APP_JWT_SECRET` - klucz HMAC do podpisu JWT (domyslnie `change-me-in-prod`, w prod nalezy nadpisac),
+- `APP_JWT_TTL_HOURS` - czas zycia tokenu (domyslnie 8h),
+- `APP_CORS_ALLOWED_ORIGINS` - lista originow rozdzielona przecinkami (np. `http://localhost:5173,http://twoja-domena`),
+- `APP_UPLOAD_DIR` - sciezka na pliki JPG (domyslnie `uploads` w katalogu backendu),
+- `SPRING_PROFILES_ACTIVE` - `dev`, `test` lub `prod` (domyslnie `prod`),
+- `SPRING_DATASOURCE_*` - konfiguracja MySQL w prod,
+- `VITE_API_BASE_URL` - adres backendu od strony frontendu (domyslnie `http://localhost:8081`).
 
 ## Uruchamianie w trybie deweloperskim
 
@@ -190,7 +190,7 @@ Podczas startu aplikacji (CommandLineRunner):
    - menedzer: `manager / manager123`,
    - pracownik: `employee / employee123`.
 
-> Alternatywnie mozna wystartowac oba serwisy poprzez `docker compose up --build` – szczegoly w sekcji [Konteneryzacja (Docker)](#konteneryzacja-docker).
+> Alternatywnie mozna wystartowac oba serwisy poprzez `docker compose up --build` - szczegoly w sekcji [Konteneryzacja (Docker)](#konteneryzacja-docker).
 
 ## Tryb produkcyjny i wdrozenie
 
@@ -202,7 +202,7 @@ Podczas startu aplikacji (CommandLineRunner):
 ### Frontend
 - Zbuduj projekt: `npm run build` (plik wynikowy w `dist/`).
 - Do serwowania statycznego mozesz wykorzystac dowolny serwer (np. Nginx). Upewnij sie, ze zapytania `fetch` trafiaja na backend (konfiguracja proxy lub environment).
-- Playwright w trybie produkcyjnym korzysta z `npm run preview` (port 4173) – to rowniez mozna wykorzystac jako szybki podglad po buildzie.
+- Playwright w trybie produkcyjnym korzysta z `npm run preview` (port 4173) - to rowniez mozna wykorzystac jako szybki podglad po buildzie.
 
 ### Konteneryzacja (Docker)
 - Plik `docker-compose.yml` uruchamia kompletny zestaw uslug: backend (Spring Boot, profil `dev`) oraz frontend (Nginx serwujacy gotowy build Vite).
@@ -213,7 +213,8 @@ Podczas startu aplikacji (CommandLineRunner):
   - Frontend: `http://localhost:8080`
   - Backend API: `http://localhost:8081`
 - Backend startuje w profilu `dev` z baza H2 zapisywana do wolumenu `backend_data`. Przy pierwszym uruchomieniu seedowane sa konta testowe oraz pozycje menu przeniesione z wersji produkcyjnej; dalsze zmiany (np. edycja menu) pozostaja zachowane po restarcie kontenerow. Jesli potrzebujesz w pelni produkcyjnego trybu, ustaw `SPRING_PROFILES_ACTIVE=prod` i podaj parametry MySQL.
-- Katalog `backend/uploads` z repo jest montowany do kontenera (bind mount), dlatego obrazy produktow sa dostepne od razu i mozna je aktualizowac z poziomu hosta.
+- Katalog `backend/uploads` z repo jest montowany do kontenera (bind mount), dlatego obraz<img width="487" height="504" alt="image" src="https://github.com/user-attachments/assets/848609c3-14bd-4a4b-b021-27b4560f9924" />
+y produktow sa dostepne od razu i mozna je aktualizowac z poziomu hosta.
 - Argument `VITE_API_BASE_URL` oraz zmienne srodowiskowe Springa (`APP_*`, `SPRING_*`) mozna modyfikowac w `docker-compose.yml`, aby dostosowac konfiguracje do srodowiska docelowego lub rejestru obrazow.
 
 ### Baza danych
@@ -293,11 +294,11 @@ Podczas startu aplikacji (CommandLineRunner):
 
 ## Najczestsze problemy i wskazowki
 
-- **401 przy wywolaniu API** – upewnij sie, ze `APP_JWT_SECRET` na backendzie i tokeny w przegladarce sa zgodne. Wyczysc `localStorage` (AuthContext sam to robi przy niezgodnym tokenie).
-- **Problemy z uploadem zdjec** – endpoint akceptuje tylko pliki JPG z poprawnym naglowkiem MIME. Sprawdz czy `app.upload.dir` ma prawa zapisu.
-- **Brak numerow na ekranie publicznym** – odpowiedzi 304 sa spodziewane. Wymus odswiezenie backendu (np. zmiana statusu) lub skasuj naglowek `If-None-Match` w debugerze, aby sprawdzic czy backend zwraca nowe dane.
-- **CORS** – skonfiguruj `APP_CORS_ALLOWED_ORIGINS` na backendzie i restartuj aplikacje.
-- **Bledy raportow (413/400)** – backend ogranicza zakres raportu do 31 dni oraz 5000 rekordow. Zweryfikuj filtry dat/czasu.
+- **401 przy wywolaniu API** - upewnij sie, ze `APP_JWT_SECRET` na backendzie i tokeny w przegladarce sa zgodne. Wyczysc `localStorage` (AuthContext sam to robi przy niezgodnym tokenie).
+- **Problemy z uploadem zdjec** - endpoint akceptuje tylko pliki JPG z poprawnym naglowkiem MIME. Sprawdz czy `app.upload.dir` ma prawa zapisu.
+- **Brak numerow na ekranie publicznym** - odpowiedzi 304 sa spodziewane. Wymus odswiezenie backendu (np. zmiana statusu) lub skasuj naglowek `If-None-Match` w debugerze, aby sprawdzic czy backend zwraca nowe dane.
+- **CORS** - skonfiguruj `APP_CORS_ALLOWED_ORIGINS` na backendzie i restartuj aplikacje.
+- **Bledy raportow (413/400)** - backend ogranicza zakres raportu do 31 dni oraz 5000 rekordow. Zweryfikuj filtry dat/czasu.
 
 ## Dalsze kierunki rozwoju
 
