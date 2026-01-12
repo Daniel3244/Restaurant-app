@@ -213,8 +213,7 @@ Podczas startu aplikacji (CommandLineRunner):
   - Frontend: `http://localhost:8080`
   - Backend API: `http://localhost:8081`
 - Backend startuje w profilu `dev` z baza H2 zapisywana do wolumenu `backend_data`. Przy pierwszym uruchomieniu seedowane sa konta testowe oraz pozycje menu przeniesione z wersji produkcyjnej; dalsze zmiany (np. edycja menu) pozostaja zachowane po restarcie kontenerow. Jesli potrzebujesz w pelni produkcyjnego trybu, ustaw `SPRING_PROFILES_ACTIVE=prod` i podaj parametry MySQL.
-- Katalog `backend/uploads` z repo jest montowany do kontenera (bind mount), dlatego obraz<img width="487" height="504" alt="image" src="https://github.com/user-attachments/assets/848609c3-14bd-4a4b-b021-27b4560f9924" />
-y produktow sa dostepne od razu i mozna je aktualizowac z poziomu hosta.
+- Katalog `backend/uploads` z repo jest montowany do kontenera (bind mount), dlatego obrazy produktow sa dostepne od razu i mozna je aktualizowac z poziomu hosta.
 - Argument `VITE_API_BASE_URL` oraz zmienne srodowiskowe Springa (`APP_*`, `SPRING_*`) mozna modyfikowac w `docker-compose.yml`, aby dostosowac konfiguracje do srodowiska docelowego lub rejestru obrazow.
 
 ### Baza danych
